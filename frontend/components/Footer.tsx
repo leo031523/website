@@ -1,8 +1,8 @@
 export default function Footer() {
   return (
-    <footer className="border-t border-hairline mt-24">
+    <footer className="border-t border-hairline dark:border-dark-border mt-24">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <p className="text-xs text-sumi-light">
+        <p className="text-xs text-sumi-light dark:text-dark-muted">
           © {new Date().getFullYear()} Portfolio
         </p>
       </div>

@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -8,6 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // 日式簡約色票（淺色）
         washi: '#FAF8F3',
         'washi-card': '#F2EFE8',
         sumi: '#1F1F1D',
@@ -15,17 +17,19 @@ const config: Config = {
         ai: '#2E4057',
         vermillion: '#B7410E',
         hairline: '#E3DFD6',
+        // 深色模式
+        'dark-bg': '#1C1B19',
+        'dark-card': '#252420',
+        'dark-border': '#35332D',
+        'dark-muted': '#9E9B94',
+        'dark-accent': '#7BA7C4',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui'],
         serif: ['var(--font-serif)', 'ui-serif', 'Georgia'],
       },
-      lineHeight: {
-        reading: '1.8',
-      },
-      letterSpacing: {
-        reading: '0.02em',
-      },
+      lineHeight: { reading: '1.8' },
+      letterSpacing: { reading: '0.02em' },
       typography: {
         DEFAULT: {
           css: {
@@ -67,6 +71,13 @@ const config: Config = {
               borderRadius: '4px',
             },
             'pre code': { backgroundColor: 'transparent', padding: '0' },
+          },
+        },
+        invert: {
+          css: {
+            '--tw-prose-pre-bg': '#252420',
+            pre: { backgroundColor: '#252420', border: '1px solid #35332D' },
+            code: { backgroundColor: '#252420' },
           },
         },
       },

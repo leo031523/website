@@ -6,6 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-washi text-sumi;
+    @apply bg-washi text-sumi dark:bg-dark-bg dark:text-washi;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }

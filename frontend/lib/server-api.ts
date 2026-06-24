@@ -1,4 +1,4 @@
-import type { Article, Category, PaginatedResponse, Project } from './types'
+import type { Article, Category, PaginatedResponse, Project, Tag } from './types'
 
 const BASE = process.env.API_URL ?? 'http://backend:8000'
 
@@ -10,6 +10,7 @@ export async function getArticles(params?: {
   page?: number
   page_size?: number
   category_id?: number
+  tag_id?: number
 }): Promise<PaginatedResponse<Article>> {
   try {
     const q = new URLSearchParams(
@@ -51,6 +52,28 @@ export async function getCategories(): Promise<Category[]> {
   } catch {
     return []
   }
+}
+
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  const categories = await getCategories()
+  return categories.find(c => c.slug === slug) ?? null
+}
+
+export async function getTags(): Promise<Tag[]> {
+  try {
+    const res = await fetch(`${BASE}/api/tags`, {
+      next: { tags: ['tags'] },
+    })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+export async function getTagBySlug(slug: string): Promise<Tag | null> {
+  const tags = await getTags()
+  return tags.find(t => t.slug === slug) ?? null
 }
 
 export async function getProjects(): Promise<Project[]> {

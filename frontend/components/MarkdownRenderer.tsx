@@ -8,7 +8,7 @@ interface Props {
 
 export default function MarkdownRenderer({ content }: Props) {
   return (
-    <div className="prose prose-lg max-w-none">
+    <div className="prose prose-lg max-w-none dark:prose-invert">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}

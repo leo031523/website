@@ -10,6 +10,7 @@ from app.api import (
     categories_router,
     media_router,
     projects_router,
+    search_router,
     tags_router,
     tools_router,
 )
@@ -40,6 +41,7 @@ app.include_router(tags_router)
 app.include_router(media_router)
 app.include_router(projects_router)
 app.include_router(tools_router)
+app.include_router(search_router)
 
 
 @app.get("/api/health")
