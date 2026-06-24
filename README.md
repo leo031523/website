@@ -17,7 +17,7 @@
   cp .env.example .env  # 填入必要的密碼
   docker compose up -d
   docker compose exec backend alembic upgrade head
-  # 建立管理者帳號（一次性）
+  建立管理者帳號（一次性）
   docker compose exec backend python scripts/seed_admin.py
   前往 http://localhost
 
