@@ -1,4 +1,4 @@
-import type { Article, ArticlePayload, Category, MediaItem, PaginatedResponse, Tag, User } from './types'
+import type { Article, ArticlePayload, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
 
@@ -79,4 +79,28 @@ export const api = {
   },
 
   deleteMedia: (id: number) => req<void>(`/media/${id}`, { method: 'DELETE' }),
+
+  // ── Projects ─────────────────────────────────────────
+  listProjects: () => req<Project[]>('/projects'),
+
+  getProjectById: (id: number) => req<Project>(`/projects/id/${id}`),
+
+  createProject: (data: ProjectPayload) =>
+    req<Project>('/projects', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateProject: (id: number, data: Partial<ProjectPayload>) =>
+    req<Project>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteProject: (id: number) => req<void>(`/projects/${id}`, { method: 'DELETE' }),
+
+  // ── Tools ────────────────────────────────────────────
+  listTools: () => req<Tool[]>('/tools'),
+
+  createTool: (data: Omit<Tool, 'id'>) =>
+    req<Tool>('/tools', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateTool: (id: number, data: Partial<Omit<Tool, 'id'>>) =>
+    req<Tool>(`/tools/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteTool: (id: number) => req<void>(`/tools/${id}`, { method: 'DELETE' }),
 }

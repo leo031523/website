@@ -2,7 +2,9 @@ from .article import Article, ArticleStatus
 from .base import Base
 from .category import Category
 from .media import Media
+from .project import Project, project_tags as project_tags_table, project_tools
 from .tag import Tag, article_tags
+from .tool import Tool
 from .user import User
 
 __all__ = [
@@ -14,4 +16,8 @@ __all__ = [
     "Media",
     "Article",
     "ArticleStatus",
+    "Tool",
+    "Project",
+    "project_tags_table",
+    "project_tools",
 ]

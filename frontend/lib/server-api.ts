@@ -1,4 +1,4 @@
-import type { Article, Category, PaginatedResponse } from './types'
+import type { Article, Category, PaginatedResponse, Project } from './types'
 
 const BASE = process.env.API_URL ?? 'http://backend:8000'
 
@@ -50,5 +50,29 @@ export async function getCategories(): Promise<Category[]> {
     return res.json()
   } catch {
     return []
+  }
+}
+
+export async function getProjects(): Promise<Project[]> {
+  try {
+    const res = await fetch(`${BASE}/api/projects`, {
+      next: { tags: ['projects'] },
+    })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+export async function getProject(slug: string): Promise<Project | null> {
+  try {
+    const res = await fetch(`${BASE}/api/projects/${slug}`, {
+      next: { tags: ['projects', `project-${slug}`] },
+    })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
   }
 }

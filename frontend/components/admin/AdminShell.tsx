@@ -61,6 +61,8 @@ function Sidebar() {
       <nav className="flex flex-col gap-0.5 flex-1">
         <NavLink href="/admin" label="儀表板" exact pathname={pathname} />
         <NavLink href="/admin/articles" label="文章管理" pathname={pathname} />
+        <NavLink href="/admin/projects" label="作品集" pathname={pathname} />
+        <NavLink href="/admin/tools" label="工具清單" pathname={pathname} />
         <NavLink href="/admin/media" label="媒體庫" pathname={pathname} />
       </nav>
       <button

@@ -4,25 +4,26 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminShell from '@/components/admin/AdminShell'
 import { api } from '@/lib/api'
-import type { Article, MediaItem } from '@/lib/types'
+import type { Article, Project } from '@/lib/types'
 
 export default function Dashboard() {
   const [articles, setArticles] = useState<Article[]>([])
-  const [media, setMedia] = useState<MediaItem[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       api.listArticles({ page_size: 100 }),
-      api.listMedia(),
-    ]).then(([art, med]) => {
+      api.listProjects(),
+    ]).then(([art, proj]) => {
       setArticles(art.items)
-      setMedia(med)
+      setProjects(proj)
     }).finally(() => setLoading(false))
   }, [])
 
-  const published = articles.filter(a => a.status === 'published').length
-  const drafts = articles.filter(a => a.status === 'draft').length
+  const publishedArticles = articles.filter(a => a.status === 'published').length
+  const draftArticles = articles.filter(a => a.status === 'draft').length
+  const publishedProjects = projects.filter(p => p.status === 'published').length
   const recent = articles.slice(0, 5)
 
   return (
@@ -32,10 +33,11 @@ export default function Dashboard() {
       ) : (
         <div className="flex flex-col gap-10">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <StatCard label="已發布文章" value={published} />
-            <StatCard label="草稿" value={drafts} />
-            <StatCard label="媒體檔案" value={media.length} />
+          <div className="grid grid-cols-4 gap-4">
+            <StatCard label="已發布文章" value={publishedArticles} />
+            <StatCard label="草稿文章" value={draftArticles} />
+            <StatCard label="已發布作品" value={publishedProjects} />
+            <StatCard label="作品總數" value={projects.length} />
           </div>
 
           {/* Recent articles */}
@@ -54,16 +56,11 @@ export default function Dashboard() {
               <ul className="flex flex-col divide-y divide-hairline">
                 {recent.map(a => (
                   <li key={a.id} className="py-3 flex items-center justify-between">
-                    <Link
-                      href={`/admin/articles/${a.id}`}
-                      className="text-sm text-sumi hover:text-ai transition-colors"
-                    >
+                    <Link href={`/admin/articles/${a.id}`} className="text-sm text-sumi hover:text-ai transition-colors">
                       {a.title}
                     </Link>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      a.status === 'published'
-                        ? 'bg-ai/10 text-ai'
-                        : 'bg-washi-card text-sumi-light'
+                      a.status === 'published' ? 'bg-ai/10 text-ai' : 'bg-washi-card text-sumi-light'
                     }`}>
                       {a.status === 'published' ? '已發布' : '草稿'}
                     </span>

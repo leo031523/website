@@ -4,7 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import articles_router, auth_router, categories_router, media_router, tags_router
+from app.api import (
+    articles_router,
+    auth_router,
+    categories_router,
+    media_router,
+    projects_router,
+    tags_router,
+    tools_router,
+)
 from app.core.config import settings
 
 app = FastAPI(
@@ -30,6 +38,8 @@ app.include_router(articles_router)
 app.include_router(categories_router)
 app.include_router(tags_router)
 app.include_router(media_router)
+app.include_router(projects_router)
+app.include_router(tools_router)
 
 
 @app.get("/api/health")
