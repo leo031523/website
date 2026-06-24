@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost"
     revalidate_secret: str = "change-me-in-production"
     frontend_url: str = "http://frontend:3000"
+    media_dir: str = "/app/media"
 
     model_config = {"env_file": ".env"}
 

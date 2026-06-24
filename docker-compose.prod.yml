@@ -1,0 +1,63 @@
+# 正式環境 Docker Compose override
+# 使用方式：
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# 初次部署請先執行：
+#   bash scripts/init-certbot.sh <your-domain> <your-email>
+
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # 每 12 小時嘗試自動續期
+    entrypoint: >
+      /bin/sh -c '
+      trap exit TERM;
+      while :; do
+        certbot renew --quiet;
+        sleep 12h & wait $${!};
+      done'
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    # 每 24 小時備份一次，保留最近 7 份
+    entrypoint: >
+      /bin/sh -c '
+      mkdir -p /backups;
+      while true; do
+        DATE=$$(date +%Y%m%d_%H%M%S);
+        pg_dump -h db -U $${POSTGRES_USER} $${POSTGRES_DB} \
+          | gzip > /backups/db_$${DATE}.sql.gz \
+          && echo "[backup] db_$${DATE}.sql.gz";
+        ls -t /backups/db_*.sql.gz 2>/dev/null | tail -n +8 | xargs rm -f;
+        sleep 86400;
+      done'
+    restart: unless-stopped
+
+volumes:
+  certbot_certs:
+  certbot_www:

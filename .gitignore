@@ -36,6 +36,9 @@ logs/
 # Media uploads (local Docker volume — 僅忽略 backend 上傳目錄)
 /backend/media/
 
+# Database backups（保留目錄本身，忽略備份檔）
+/backups/*.sql.gz
+
 # SSL certificates
 certbot/etc/
 certbot/www/

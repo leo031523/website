@@ -38,6 +38,5 @@ def health():
 
 
 # Serve uploaded media files
-_media_dir = "/app/media"
-os.makedirs(_media_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=_media_dir), name="uploads")
+os.makedirs(settings.media_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.media_dir), name="uploads")

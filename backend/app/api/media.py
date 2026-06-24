@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.media import Media
@@ -13,7 +14,7 @@ from app.schemas.media import MediaResponse
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
-MEDIA_DIR = "/app/media"
+MEDIA_DIR = settings.media_dir
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 
