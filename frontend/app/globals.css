@@ -10,3 +10,12 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
+
+/* 深色模式使用 github-dark 程式碼高亮 */
+@media (prefers-color-scheme: dark) {
+  .hljs { background: #252420; }
+}
+.dark .hljs {
+  background: #252420;
+  color: #c9d1d9;
+}

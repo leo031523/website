@@ -7,10 +7,10 @@ interface Props {
 
 export default function ProjectCard({ project }: Props) {
   return (
-    <article className="group border border-hairline rounded-lg overflow-hidden bg-white hover:border-ai transition-colors">
+    <article className="group border border-hairline dark:border-dark-border rounded-lg overflow-hidden bg-white dark:bg-dark-card hover:border-ai dark:hover:border-dark-accent transition-colors">
       <Link href={`/projects/${project.slug}`} className="block">
         {/* Cover placeholder */}
-        <div className="aspect-video bg-washi-card flex items-center justify-center border-b border-hairline">
+        <div className="aspect-video bg-washi-card dark:bg-dark-bg flex items-center justify-center border-b border-hairline dark:border-dark-border">
           {project.cover_image_id ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -19,16 +19,16 @@ export default function ProjectCard({ project }: Props) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="font-serif text-2xl text-hairline">{project.title[0]}</span>
+            <span className="font-serif text-2xl text-hairline dark:text-dark-border">{project.title[0]}</span>
           )}
         </div>
 
         <div className="p-5">
-          <h2 className="font-serif text-lg text-sumi group-hover:text-ai transition-colors mb-2 leading-snug">
+          <h2 className="font-serif text-lg text-sumi dark:text-washi group-hover:text-ai dark:group-hover:text-dark-accent transition-colors mb-2 leading-snug">
             {project.title}
           </h2>
           {project.summary && (
-            <p className="text-sm text-sumi-light leading-relaxed line-clamp-2 mb-4">
+            <p className="text-sm text-sumi-light dark:text-dark-muted leading-relaxed line-clamp-2 mb-4">
               {project.summary}
             </p>
           )}
@@ -39,7 +39,7 @@ export default function ProjectCard({ project }: Props) {
               {project.tech_stack.map(tech => (
                 <span
                   key={tech}
-                  className="text-[10px] px-2 py-0.5 bg-washi-card text-sumi-light rounded-full"
+                  className="text-[10px] px-2 py-0.5 bg-washi-card dark:bg-dark-bg text-sumi-light dark:text-dark-muted rounded-full"
                 >
                   {tech}
                 </span>
@@ -57,7 +57,7 @@ export default function ProjectCard({ project }: Props) {
               href={project.repo_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-sumi-light hover:text-ai transition-colors"
+              className="text-xs text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors"
               onClick={e => e.stopPropagation()}
             >
               Source →
@@ -68,7 +68,7 @@ export default function ProjectCard({ project }: Props) {
               href={project.demo_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-ai hover:underline"
+              className="text-xs text-ai dark:text-dark-accent hover:underline"
               onClick={e => e.stopPropagation()}
             >
               Demo →

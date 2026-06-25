@@ -34,7 +34,7 @@ export default async function TagPage({ params }: Props) {
   return (
     <>
       <Header />
-      <main className="max-w-2xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 py-16">
         <div className="mb-12">
           <Link href="/blog" className="text-xs text-sumi-light dark:text-dark-muted hover:text-ai transition-colors">
             ← 文章列表

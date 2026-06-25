@@ -35,7 +35,7 @@ export default function SearchPage() {
   return (
     <>
       <Header />
-      <main className="max-w-2xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="font-serif text-3xl text-sumi dark:text-washi mb-10 tracking-wide">搜尋</h1>
 
         <form onSubmit={handleSearch} className="flex gap-3 mb-10">

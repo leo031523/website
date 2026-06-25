@@ -11,9 +11,9 @@ export default function AboutPage() {
   return (
     <>
       <Header />
-      <main className="max-w-2xl mx-auto px-6 py-16">
-        <h1 className="font-serif text-3xl text-sumi mb-12 tracking-wide">關於</h1>
-        <div className="prose prose-lg max-w-none">
+      <main className="max-w-4xl mx-auto px-6 py-16">
+        <h1 className="font-serif text-3xl text-sumi dark:text-washi mb-12 tracking-wide">關於</h1>
+        <div className="prose prose-lg max-w-none dark:prose-invert">
           <p>
             這是一個個人筆記與作品集網站，記錄學習過的技術、使用過的工具，以及開發過的專案。
           </p>

@@ -71,30 +71,30 @@ export default async function ArticlePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <main className="max-w-2xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 py-16">
         {/* Category */}
         {article.category && (
-          <p className="text-xs text-sumi-light tracking-wide mb-4">
+          <p className="text-xs text-sumi-light dark:text-dark-muted tracking-wide mb-4">
             {article.category.name}
           </p>
         )}
 
         {/* Title */}
-        <h1 className="font-serif text-3xl text-sumi leading-tight mb-4 tracking-wide">
+        <h1 className="font-serif text-3xl text-sumi dark:text-washi leading-tight mb-4 tracking-wide">
           {article.title}
         </h1>
 
         {/* Meta */}
-        <div className="flex items-center gap-4 mb-12 pb-8 border-b border-hairline">
+        <div className="flex items-center gap-4 mb-12 pb-8 border-b border-hairline dark:border-dark-border">
           {publishedDate && (
-            <time className="text-xs text-sumi-light" dateTime={article.published_at ?? ''}>
+            <time className="text-xs text-sumi-light dark:text-dark-muted" dateTime={article.published_at ?? ''}>
               {publishedDate}
             </time>
           )}
           {article.tags.length > 0 && (
             <div className="flex gap-2">
               {article.tags.map(t => (
-                <span key={t.id} className="text-xs text-sumi-light bg-washi-card px-2 py-0.5 rounded-full">
+                <span key={t.id} className="text-xs text-sumi-light dark:text-dark-muted bg-washi-card dark:bg-dark-card px-2 py-0.5 rounded-full">
                   {t.name}
                 </span>
               ))}
