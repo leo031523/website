@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 
 export default function LoginPage() {
@@ -28,6 +29,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-washi flex items-center justify-center">
       <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-10">
+          <Link href="/" className="text-xs text-sumi-light hover:text-sumi transition-colors">
+            ← 回首頁
+          </Link>
+        </div>
         <h1 className="font-serif text-2xl text-sumi text-center mb-10 tracking-wide">
           後台管理
         </h1>
