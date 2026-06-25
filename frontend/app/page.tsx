@@ -24,8 +24,8 @@ export default async function HomePage() {
       <Header />
       <main>
         {/* Hero */}
-        <section className="max-w-4xl mx-auto px-6 py-24">
-          <h1 className="font-serif text-4xl text-sumi dark:text-washi leading-tight mb-6 tracking-wide">
+        <section className="max-w-4xl mx-auto px-6 py-16">
+          <h1 className="font-serif text-3xl text-sumi dark:text-washi leading-tight mb-6 tracking-wide">
             筆記與作品集
           </h1>
           <p className="text-sumi-light dark:text-dark-muted leading-relaxed max-w-md">
