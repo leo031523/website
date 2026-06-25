@@ -55,9 +55,9 @@ function Sidebar() {
 
   return (
     <aside className="w-48 border-r border-hairline flex-shrink-0 py-10 px-4 flex flex-col">
-      <p className="text-[10px] text-sumi-light uppercase tracking-[0.2em] mb-8 px-2">
-        Portfolio
-      </p>
+      <Link href="/" className="text-[10px] text-sumi-light uppercase tracking-[0.2em] mb-8 px-2 hover:text-sumi transition-colors">
+        Portfolio ↗
+      </Link>
       <nav className="flex flex-col gap-0.5 flex-1">
         <NavLink href="/admin" label="儀表板" exact pathname={pathname} />
         <NavLink href="/admin/articles" label="文章管理" pathname={pathname} />

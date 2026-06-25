@@ -6,6 +6,8 @@ import Header from '@/components/Header'
 import ProjectCard from '@/components/ProjectCard'
 import { getArticles, getProjects } from '@/lib/server-api'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Portfolio — 筆記與作品集',
   description: '記錄技術學習的過程、工具的使用心得，以及個人專案。',

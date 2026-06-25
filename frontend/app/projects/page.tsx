@@ -4,6 +4,8 @@ import Header from '@/components/Header'
 import ProjectCard from '@/components/ProjectCard'
 import { getProjects } from '@/lib/server-api'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '作品集 — Portfolio',
   description: '個人專案與作品展示。',

@@ -5,6 +5,8 @@ import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import { getArticles, getCategories } from '@/lib/server-api'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '文章 — Portfolio',
   description: '技術筆記、工具心得與學習紀錄。',
