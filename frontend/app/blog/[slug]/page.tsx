@@ -104,6 +104,16 @@ export default async function ArticlePage({ params }: Props) {
 
         {/* Content */}
         <MarkdownRenderer content={article.content_md ?? ''} />
+
+        {/* Back */}
+        <div className="mt-16 pt-8 border-t border-hairline dark:border-dark-border">
+          <Link
+            href="/blog"
+            className="text-sm text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors"
+          >
+            ← 返回文章列表
+          </Link>
+        </div>
       </main>
       <Footer />
     </>
