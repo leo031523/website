@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import type { Project } from '@/lib/types'
 
