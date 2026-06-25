@@ -78,6 +78,9 @@ export const api = {
     return data as MediaItem
   },
 
+  updateMedia: (id: number, data: { alt_text: string | null }) =>
+    req<MediaItem>(`/media/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   deleteMedia: (id: number) => req<void>(`/media/${id}`, { method: 'DELETE' }),
 
   // ── Projects ─────────────────────────────────────────

@@ -11,6 +11,76 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`
 }
 
+function MediaCard({
+  item,
+  copiedId,
+  onCopy,
+  onDelete,
+  onRename,
+}: {
+  item: MediaItem
+  copiedId: number | null
+  onCopy: (item: MediaItem) => void
+  onDelete: (id: number) => void
+  onRename: (id: number, name: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(item.alt_text ?? '')
+
+  function startEdit() {
+    setDraft(item.alt_text ?? '')
+    setEditing(true)
+  }
+
+  function commitEdit() {
+    setEditing(false)
+    const trimmed = draft.trim()
+    if (trimmed !== (item.alt_text ?? '')) {
+      onRename(item.id, trimmed)
+    }
+  }
+
+  return (
+    <div className="group border border-hairline rounded overflow-hidden bg-white">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.url}
+        alt={item.alt_text ?? item.filename}
+        className="w-full aspect-square object-cover"
+      />
+      <div className="p-2">
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+            className="text-xs text-sumi w-full border-b border-ai outline-none mb-1 bg-transparent"
+          />
+        ) : (
+          <p
+            className="text-xs text-sumi truncate mb-1 cursor-pointer hover:text-ai"
+            title="點擊改名"
+            onClick={startEdit}
+          >
+            {item.alt_text || item.filename}
+          </p>
+        )}
+        <p className="text-[10px] text-sumi-light">{formatBytes(item.size)}</p>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => onCopy(item)} className="text-[10px] text-ai hover:underline">
+            {copiedId === item.id ? '已複製！' : '複製 URL'}
+          </button>
+          <button onClick={() => onDelete(item.id)} className="text-[10px] text-sumi-light hover:text-vermillion ml-auto">
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MediaLibrary() {
   const [items, setItems] = useState<MediaItem[]>([])
   const [uploading, setUploading] = useState(false)
@@ -40,6 +110,11 @@ export default function MediaLibrary() {
     if (!confirm('確定刪除此檔案？')) return
     await api.deleteMedia(id)
     setItems(prev => prev.filter(m => m.id !== id))
+  }
+
+  async function handleRename(id: number, name: string) {
+    const updated = await api.updateMedia(id, { alt_text: name || null })
+    setItems(prev => prev.map(m => m.id === id ? updated : m))
   }
 
   function copyUrl(item: MediaItem) {
@@ -75,7 +150,7 @@ export default function MediaLibrary() {
         ) : (
           <>
             <p className="text-sm text-sumi-light mb-1">拖放圖片至此，或點擊選擇</p>
-            <p className="text-xs text-hairline">支援 JPG、PNG、GIF、WebP，最大 10 MB</p>
+            <p className="text-xs text-hairline">支援 JPG、PNG、GIF、WebP，最大 10 MB｜點擊名稱可改名</p>
           </>
         )}
       </div>
@@ -88,34 +163,14 @@ export default function MediaLibrary() {
       ) : (
         <div className="grid grid-cols-4 gap-4">
           {items.map(item => (
-            <div key={item.id} className="group border border-hairline rounded overflow-hidden bg-white">
-              {/* Preview */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.url}
-                alt={item.alt_text ?? item.filename}
-                className="w-full aspect-square object-cover"
-              />
-              {/* Meta */}
-              <div className="p-2">
-                <p className="text-xs text-sumi truncate mb-1">{item.filename}</p>
-                <p className="text-[10px] text-sumi-light">{formatBytes(item.size)}</p>
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => copyUrl(item)}
-                    className="text-[10px] text-ai hover:underline"
-                  >
-                    {copiedId === item.id ? '已複製！' : '複製 URL'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-[10px] text-sumi-light hover:text-vermillion ml-auto"
-                  >
-                    刪除
-                  </button>
-                </div>
-              </div>
-            </div>
+            <MediaCard
+              key={item.id}
+              item={item}
+              copiedId={copiedId}
+              onCopy={copyUrl}
+              onDelete={handleDelete}
+              onRename={handleRename}
+            />
           ))}
         </div>
       )}

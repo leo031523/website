@@ -13,3 +13,7 @@ class MediaResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MediaUpdate(BaseModel):
+    alt_text: str | None = None

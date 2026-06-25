@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.media import Media
 from app.models.user import User
-from app.schemas.media import MediaResponse
+from app.schemas.media import MediaResponse, MediaUpdate
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
@@ -68,6 +68,23 @@ async def upload_media(
         size=len(contents),
     )
     db.add(media)
+    await db.commit()
+    await db.refresh(media)
+    return _to_response(media)
+
+
+@router.patch("/{media_id}", response_model=MediaResponse)
+async def update_media(
+    media_id: int,
+    body: MediaUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Media).where(Media.id == media_id))
+    media = result.scalar_one_or_none()
+    if not media:
+        raise HTTPException(status_code=404, detail="找不到媒體")
+    media.alt_text = body.alt_text
     await db.commit()
     await db.refresh(media)
     return _to_response(media)
