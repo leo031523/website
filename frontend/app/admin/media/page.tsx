@@ -101,7 +101,9 @@ function MediaCard({
             )}
           </div>
         </div>
-        <p className="text-[10px] text-sumi-light">{formatBytes(item.size)}</p>
+        <p className="text-[10px] text-sumi-light">
+          {formatBytes(item.size)} · {new Date(item.created_at).toLocaleDateString('zh-TW')}
+        </p>
       </div>
     </div>
   )
