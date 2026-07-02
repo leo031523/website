@@ -56,11 +56,21 @@ export const api = {
   createCategory: (data: { name: string; slug: string }) =>
     req<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),
 
+  updateCategory: (id: number, data: { name: string; slug: string }) =>
+    req<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteCategory: (id: number) => req<void>(`/categories/${id}`, { method: 'DELETE' }),
+
   // ── Tags ─────────────────────────────────────────────
   listTags: () => req<Tag[]>('/tags'),
 
   createTag: (data: { name: string; slug: string }) =>
     req<Tag>('/tags', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateTag: (id: number, data: { name: string; slug: string }) =>
+    req<Tag>(`/tags/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteTag: (id: number) => req<void>(`/tags/${id}`, { method: 'DELETE' }),
 
   // ── Media ────────────────────────────────────────────
   listMedia: () => req<MediaItem[]>('/media'),
