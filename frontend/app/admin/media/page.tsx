@@ -43,12 +43,12 @@ function MediaCard({
   }
 
   return (
-    <div className="border border-hairline rounded overflow-hidden bg-white">
+    <div className="border border-hairline rounded bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={item.url}
         alt={item.alt_text ?? item.filename}
-        className="w-full aspect-square object-cover"
+        className="w-full aspect-square object-cover rounded-t"
       />
       <div className="p-2">
         <div className="flex items-start gap-1 mb-1">
