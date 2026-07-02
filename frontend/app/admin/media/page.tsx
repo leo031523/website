@@ -26,10 +26,12 @@ function MediaCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(item.alt_text ?? '')
+  const [menuOpen, setMenuOpen] = useState(false)
 
   function startEdit() {
     setDraft(item.alt_text ?? '')
     setEditing(true)
+    setMenuOpen(false)
   }
 
   function commitEdit() {
@@ -41,7 +43,7 @@ function MediaCard({
   }
 
   return (
-    <div className="group border border-hairline rounded overflow-hidden bg-white">
+    <div className="border border-hairline rounded overflow-hidden bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={item.url}
@@ -49,33 +51,57 @@ function MediaCard({
         className="w-full aspect-square object-cover"
       />
       <div className="p-2">
-        {editing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-            className="text-xs text-sumi w-full border-b border-ai outline-none mb-1 bg-transparent"
-          />
-        ) : (
-          <p
-            className="text-xs text-sumi truncate mb-1 cursor-pointer hover:text-ai"
-            title="點擊改名"
-            onClick={startEdit}
-          >
-            {item.alt_text || item.filename}
-          </p>
-        )}
-        <p className="text-[10px] text-sumi-light">{formatBytes(item.size)}</p>
-        <div className="flex gap-2 mt-2">
-          <button onClick={() => onCopy(item)} className="text-[10px] text-ai hover:underline">
-            {copiedId === item.id ? '已複製！' : '複製 URL'}
-          </button>
-          <button onClick={() => onDelete(item.id)} className="text-[10px] text-sumi-light hover:text-vermillion ml-auto">
-            刪除
-          </button>
+        <div className="flex items-start gap-1 mb-1">
+          {editing ? (
+            <input
+              autoFocus
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+              className="text-xs text-sumi flex-1 border-b border-ai outline-none bg-transparent"
+            />
+          ) : (
+            <p className="text-xs text-sumi truncate flex-1">
+              {item.alt_text || item.filename}
+            </p>
+          )}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              className="text-sumi-light hover:text-sumi transition-colors px-0.5 leading-none text-sm"
+              aria-label="選單"
+            >
+              ⋯
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-5 z-20 bg-white border border-hairline rounded shadow-sm py-1 w-24">
+                  <button
+                    onClick={startEdit}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-sumi hover:bg-washi-card transition-colors"
+                  >
+                    改名
+                  </button>
+                  <button
+                    onClick={() => { onCopy(item); setMenuOpen(false) }}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-sumi hover:bg-washi-card transition-colors"
+                  >
+                    {copiedId === item.id ? '已複製！' : '複製 URL'}
+                  </button>
+                  <button
+                    onClick={() => { setMenuOpen(false); onDelete(item.id) }}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-vermillion hover:bg-washi-card transition-colors"
+                  >
+                    刪除
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+        <p className="text-[10px] text-sumi-light">{formatBytes(item.size)}</p>
       </div>
     </div>
   )
@@ -130,7 +156,6 @@ export default function MediaLibrary() {
 
   return (
     <AdminShell title="媒體庫">
-      {/* Upload zone */}
       <div
         onDrop={onDrop}
         onDragOver={e => e.preventDefault()}
@@ -150,12 +175,11 @@ export default function MediaLibrary() {
         ) : (
           <>
             <p className="text-sm text-sumi-light mb-1">拖放圖片至此，或點擊選擇</p>
-            <p className="text-xs text-hairline">支援 JPG、PNG、GIF、WebP，最大 10 MB｜點擊名稱可改名</p>
+            <p className="text-xs text-hairline">支援 JPG、PNG、GIF、WebP，最大 10 MB</p>
           </>
         )}
       </div>
 
-      {/* Grid */}
       {loading ? (
         <p className="text-sm text-sumi-light">載入中…</p>
       ) : items.length === 0 ? (
