@@ -11,18 +11,47 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`
 }
 
+function Lightbox({ item, onClose }: { item: MediaItem; onClose: () => void }) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/75 flex flex-col items-center justify-center p-6"
+      onClick={onClose}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.url}
+        alt={item.alt_text ?? item.filename}
+        className="max-w-full max-h-[80vh] object-contain rounded shadow-lg"
+        onClick={e => e.stopPropagation()}
+      />
+      <p className="mt-4 text-white/70 text-sm">
+        {item.alt_text || item.filename} · {formatBytes(item.size)}
+      </p>
+      <p className="mt-1 text-white/40 text-xs">點擊外部或按 Esc 關閉</p>
+    </div>
+  )
+}
+
 function MediaCard({
   item,
   copiedId,
   onCopy,
   onDelete,
   onRename,
+  onPreview,
 }: {
   item: MediaItem
   copiedId: number | null
   onCopy: (item: MediaItem) => void
   onDelete: (id: number) => void
   onRename: (id: number, name: string) => void
+  onPreview: (item: MediaItem) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(item.alt_text ?? '')
@@ -48,7 +77,8 @@ function MediaCard({
       <img
         src={item.url}
         alt={item.alt_text ?? item.filename}
-        className="w-full aspect-square object-cover rounded-t"
+        className="w-full aspect-square object-cover rounded-t cursor-zoom-in"
+        onClick={() => onPreview(item)}
       />
       <div className="p-2">
         <div className="flex items-start gap-1 mb-1">
@@ -114,6 +144,7 @@ export default function MediaLibrary() {
   const [uploading, setUploading] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [preview, setPreview] = useState<MediaItem | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -158,6 +189,8 @@ export default function MediaLibrary() {
 
   return (
     <AdminShell title="媒體庫">
+      {preview && <Lightbox item={preview} onClose={() => setPreview(null)} />}
+
       <div
         onDrop={onDrop}
         onDragOver={e => e.preventDefault()}
@@ -196,6 +229,7 @@ export default function MediaLibrary() {
               onCopy={copyUrl}
               onDelete={handleDelete}
               onRename={handleRename}
+              onPreview={setPreview}
             />
           ))}
         </div>
