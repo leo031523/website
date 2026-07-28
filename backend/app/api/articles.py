@@ -59,7 +59,11 @@ async def _trigger_revalidate(slug: str) -> None:
 
 
 def _load_options():
-    return [selectinload(Article.category), selectinload(Article.tags)]
+    return [
+        selectinload(Article.category),
+        selectinload(Article.tags),
+        selectinload(Article.cover_image),
+    ]
 
 
 @router.get("/id/{article_id}", response_model=ArticleResponse)

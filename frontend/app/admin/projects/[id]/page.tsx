@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import AdminShell from '@/components/admin/AdminShell'
+import CoverImagePicker from '@/components/admin/CoverImagePicker'
 import { api } from '@/lib/api'
 import type { ProjectPayload, Tag, Tool } from '@/lib/types'
 
@@ -29,6 +30,8 @@ export default function ProjectEditor() {
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [featured, setFeatured] = useState(false)
   const [sortOrder, setSortOrder] = useState(0)
+  const [coverImageId, setCoverImageId] = useState<number | null>(null)
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [selectedToolIds, setSelectedToolIds] = useState<number[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -52,6 +55,7 @@ export default function ProjectEditor() {
         setTechInput(p.tech_stack.join(', '))
         setRepoUrl(p.repo_url ?? ''); setDemoUrl(p.demo_url ?? '')
         setStatus(p.status); setFeatured(p.featured); setSortOrder(p.sort_order)
+        setCoverImageId(p.cover_image_id); setCoverImageUrl(p.cover_image_url)
         setSelectedTagIds(p.tags.map(t => t.id))
         setSelectedToolIds(p.tools.map(t => t.id))
       }).catch(() => router.replace('/admin/projects'))
@@ -68,6 +72,7 @@ export default function ProjectEditor() {
       repo_url: repoUrl || null, demo_url: demoUrl || null,
       status: targetStatus, featured, sort_order: sortOrder,
       tag_ids: selectedTagIds, tool_ids: selectedToolIds,
+      cover_image_id: coverImageId,
     }
     try {
       const result = isNew
@@ -114,6 +119,13 @@ export default function ProjectEditor() {
           <input type="text" value={slug} onChange={e => { setSlug(e.target.value); setSlugManual(true) }}
             className="text-sumi-light border-b border-hairline bg-transparent focus:outline-none focus:border-ai py-0.5 flex-1 transition-colors" />
         </div>
+
+        {/* Cover image */}
+        <CoverImagePicker
+          imageId={coverImageId}
+          imageUrl={coverImageUrl}
+          onChange={(id, url) => { setCoverImageId(id); setCoverImageUrl(url) }}
+        />
 
         {/* Split editor */}
         <div className="grid grid-cols-2 gap-0 border border-hairline rounded overflow-hidden" style={{ height: '50vh' }}>

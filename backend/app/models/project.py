@@ -53,3 +53,7 @@ class Project(Base):
     cover_image: Mapped[Media | None] = relationship()  # noqa: F821
     tags: Mapped[list[Tag]] = relationship(secondary=project_tags, lazy="selectin")
     tools: Mapped[list[Tool]] = relationship(secondary=project_tools, lazy="selectin")
+
+    @property
+    def cover_image_url(self) -> str | None:
+        return f"/uploads/{self.cover_image.filename}" if self.cover_image else None

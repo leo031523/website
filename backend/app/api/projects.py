@@ -58,7 +58,11 @@ async def _trigger_revalidate(slug: str) -> None:
 
 
 def _load_options():
-    return [selectinload(Project.tags), selectinload(Project.tools)]
+    return [
+        selectinload(Project.tags),
+        selectinload(Project.tools),
+        selectinload(Project.cover_image),
+    ]
 
 
 @router.get("/id/{project_id}", response_model=ProjectResponse)

@@ -39,6 +39,7 @@ class ArticleListItem(BaseModel):
     category: CategoryResponse | None
     tags: list[TagResponse]
     cover_image_id: int | None
+    cover_image_url: str | None = None
     created_at: datetime
     updated_at: datetime
 

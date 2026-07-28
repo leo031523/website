@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import AdminShell from '@/components/admin/AdminShell'
+import CoverImagePicker from '@/components/admin/CoverImagePicker'
 import { api } from '@/lib/api'
 import type { ArticlePayload, Category, Tag } from '@/lib/types'
 
@@ -29,6 +30,8 @@ export default function ArticleEditor() {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [coverImageId, setCoverImageId] = useState<number | null>(null)
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -57,6 +60,8 @@ export default function ArticleEditor() {
         setContent(a.content_md ?? '')
         setStatus(a.status)
         setCategoryId(a.category?.id ?? null)
+        setCoverImageId(a.cover_image_id)
+        setCoverImageUrl(a.cover_image_url)
         setSelectedTagIds(a.tags.map(t => t.id))
       }).catch(() => router.replace('/admin/articles'))
     }
@@ -73,6 +78,7 @@ export default function ArticleEditor() {
       status: targetStatus,
       category_id: categoryId,
       tag_ids: selectedTagIds,
+      cover_image_id: coverImageId,
     }
     try {
       const saved = isNew
@@ -144,6 +150,13 @@ export default function ArticleEditor() {
             className="text-sumi-light border-b border-hairline bg-transparent focus:outline-none focus:border-ai py-0.5 flex-1 transition-colors"
           />
         </div>
+
+        {/* Cover image */}
+        <CoverImagePicker
+          imageId={coverImageId}
+          imageUrl={coverImageUrl}
+          onChange={(id, url) => { setCoverImageId(id); setCoverImageUrl(url) }}
+        />
 
         {/* Split editor */}
         <div className="grid grid-cols-2 gap-0 border border-hairline rounded overflow-hidden" style={{ height: '60vh' }}>

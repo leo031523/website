@@ -1,26 +1,37 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import ArticleCard from '@/components/ArticleCard'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
-import ProjectCard from '@/components/ProjectCard'
-import { getArticles, getProjects } from '@/lib/server-api'
-
-export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Portfolio — 筆記與作品集',
   description: '記錄技術學習的過程、工具的使用心得，以及個人專案。',
 }
 
-export default async function HomePage() {
-  const [articlesData, projects] = await Promise.all([
-    getArticles({ page_size: 3 }),
-    getProjects(),
-  ])
-  const latest = articlesData.items
-  const featured = projects.filter(p => p.featured).slice(0, 4)
+const TECH_STACK = [
+  {
+    category: '前端',
+    items: ['Next.js 15 (App Router)', 'TypeScript', 'Tailwind CSS'],
+  },
+  {
+    category: '後端',
+    items: ['FastAPI', 'SQLAlchemy', 'Alembic'],
+  },
+  {
+    category: '資料庫',
+    items: ['PostgreSQL 16'],
+  },
+  {
+    category: '部署',
+    items: ['Docker Compose', 'nginx', "Let's Encrypt / Certbot"],
+  },
+  {
+    category: 'CI/CD',
+    items: ['GitHub Actions'],
+  },
+]
 
+export default function HomePage() {
   return (
     <>
       <Header />
@@ -46,39 +57,31 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Featured projects */}
-        {featured.length > 0 && (
-          <section className="max-w-4xl mx-auto px-6 pb-20">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xs text-sumi-light dark:text-dark-muted uppercase tracking-[0.2em]">精選作品</h2>
-              <Link href="/projects" className="text-xs text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors">
-                查看全部 →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featured.map(p => <ProjectCard key={p.id} project={p} />)}
-            </div>
-          </section>
-        )}
-
-        {/* Latest articles */}
-        {latest.length > 0 && (
-          <section className="max-w-4xl mx-auto px-6 pb-24">
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-xs text-sumi-light dark:text-dark-muted uppercase tracking-[0.2em]">最近文章</h2>
-              <Link href="/blog" className="text-xs text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors">
-                查看全部 →
-              </Link>
-            </div>
-            <div className="flex flex-col divide-y divide-hairline dark:divide-dark-border">
-              {latest.map(a => (
-                <div key={a.id} className="py-8 first:pt-0 last:pb-0">
-                  <ArticleCard article={a} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Tech stack */}
+        <section className="max-w-4xl mx-auto px-6 pb-24">
+          <div className="mb-10">
+            <h2 className="text-sm text-sumi-light dark:text-dark-muted uppercase tracking-[0.2em]">技術棧</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-10">
+            {TECH_STACK.map(group => (
+              <div key={group.category}>
+                <h3 className="font-serif text-xl text-sumi dark:text-washi mb-4 pb-2 border-b border-hairline dark:border-dark-border">
+                  {group.category}
+                </h3>
+                <ul className="space-y-2">
+                  {group.items.map(item => (
+                    <li
+                      key={item}
+                      className="text-sm text-sumi-light dark:text-dark-muted leading-relaxed"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
       <Footer />
     </>

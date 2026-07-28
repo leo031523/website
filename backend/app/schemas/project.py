@@ -51,6 +51,7 @@ class ProjectListItem(BaseModel):
     featured: bool
     sort_order: int
     cover_image_id: int | None
+    cover_image_url: str | None = None
     tags: list[TagResponse]
     tools: list[ToolResponse]
     created_at: datetime

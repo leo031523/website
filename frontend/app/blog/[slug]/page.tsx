@@ -85,6 +85,16 @@ export default async function ArticlePage({ params }: Props) {
           {article.title}
         </h1>
 
+        {/* Cover image */}
+        {article.cover_image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.cover_image_url}
+            alt={article.title}
+            className="w-full aspect-video object-cover rounded-lg border border-hairline dark:border-dark-border mb-8"
+          />
+        )}
+
         {/* Meta */}
         <div className="flex items-center gap-4 mb-12 pb-8 border-b border-hairline dark:border-dark-border">
           {publishedDate && (

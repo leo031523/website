@@ -49,3 +49,7 @@ class Article(Base):
     category: Mapped[Category | None] = relationship(back_populates="articles")  # noqa: F821
     cover_image: Mapped[Media | None] = relationship()  # noqa: F821
     tags: Mapped[list[Tag]] = relationship(secondary=article_tags, lazy="selectin")
+
+    @property
+    def cover_image_url(self) -> str | None:
+        return f"/uploads/{self.cover_image.filename}" if self.cover_image else None

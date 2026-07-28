@@ -19,7 +19,13 @@ export default function ArticleCard({ article, showExcerpt = true }: Props) {
 
   return (
     <article className="group">
-      <Link href={`/blog/${article.slug}`} className="block">
+      <Link href={`/blog/${article.slug}`} className="flex gap-5">
+        {article.cover_image_url && (
+          <div className="hidden sm:block w-32 aspect-video flex-shrink-0 overflow-hidden rounded border border-hairline dark:border-dark-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={article.cover_image_url} alt={article.title} className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           {article.category && (
             <Link

@@ -57,6 +57,16 @@ export default async function ProjectPage({ params }: Props) {
         <h1 className="font-serif text-3xl text-sumi dark:text-washi leading-tight mb-4 tracking-wide">
           {project.title}
         </h1>
+
+        {/* Cover image */}
+        {project.cover_image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={project.cover_image_url}
+            alt={project.title}
+            className="w-full aspect-video object-cover rounded-lg border border-hairline dark:border-dark-border mb-8"
+          />
+        )}
         {project.summary && (
           <p className="text-sumi-light dark:text-dark-muted leading-relaxed mb-8">{project.summary}</p>
         )}

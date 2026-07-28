@@ -48,6 +48,7 @@ export interface Article {
   category: Category | null
   tags: Tag[]
   cover_image_id: number | null
+  cover_image_url: string | null
   created_at: string
   updated_at: string
 }
@@ -76,6 +77,7 @@ export interface Project {
   featured: boolean
   sort_order: number
   cover_image_id: number | null
+  cover_image_url: string | null
   tags: Tag[]
   tools: Tool[]
   created_at: string
