@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import EndOfPage from '@/components/EndOfPage'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import ProjectCard from '@/components/ProjectCard'
@@ -47,6 +48,7 @@ export default async function ProjectsPage() {
             )}
           </div>
         )}
+        <EndOfPage />
       </main>
       <Footer />
     </>

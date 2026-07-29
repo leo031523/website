@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import EndOfPage from '@/components/EndOfPage'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
@@ -137,15 +137,7 @@ export default async function ProjectPage({ params }: Props) {
         {/* Content */}
         {project.content_md && <MarkdownRenderer content={project.content_md} />}
 
-        {/* Back */}
-        <div className="mt-16 pt-8 border-t border-hairline dark:border-dark-border">
-          <Link
-            href="/projects"
-            className="text-sm text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors"
-          >
-            ← 返回作品列表
-          </Link>
-        </div>
+        <EndOfPage backHref="/projects" backLabel="← 返回作品列表" />
       </main>
       <Footer />
     </>

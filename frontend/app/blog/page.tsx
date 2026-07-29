@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ArticleCard from '@/components/ArticleCard'
+import EndOfPage from '@/components/EndOfPage'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import { getArticles, getCategories } from '@/lib/server-api'
@@ -102,6 +103,7 @@ export default async function BlogPage({ searchParams }: Props) {
             )}
           </>
         )}
+        <EndOfPage />
       </main>
       <Footer />
     </>

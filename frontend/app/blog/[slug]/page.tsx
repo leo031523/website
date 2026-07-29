@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import EndOfPage from '@/components/EndOfPage'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
@@ -116,15 +116,7 @@ export default async function ArticlePage({ params }: Props) {
         {/* Content */}
         <MarkdownRenderer content={article.content_md ?? ''} />
 
-        {/* Back */}
-        <div className="mt-16 pt-8 border-t border-hairline dark:border-dark-border">
-          <Link
-            href="/blog"
-            className="text-sm text-sumi-light dark:text-dark-muted hover:text-ai dark:hover:text-dark-accent transition-colors"
-          >
-            ← 返回文章列表
-          </Link>
-        </div>
+        <EndOfPage backHref="/blog" backLabel="← 返回文章列表" />
       </main>
       <Footer />
     </>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import EndOfPage from '@/components/EndOfPage'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 
@@ -22,6 +23,7 @@ export default function AboutPage() {
             每一個環節都是可評估的工程展示。
           </p>
         </div>
+        <EndOfPage />
       </main>
       <Footer />
     </>
