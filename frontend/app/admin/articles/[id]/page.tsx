@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import AdminShell from '@/components/admin/AdminShell'
 import CoverImagePicker from '@/components/admin/CoverImagePicker'
+import MarkdownToolbar from '@/components/admin/MarkdownToolbar'
 import { api } from '@/lib/api'
 import type { ArticlePayload, Category, Tag } from '@/lib/types'
 
@@ -38,6 +39,7 @@ export default function ArticleEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const contentRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -159,15 +161,19 @@ export default function ArticleEditor() {
         />
 
         {/* Split editor */}
-        <div className="grid grid-cols-2 gap-0 border border-hairline rounded overflow-hidden" style={{ height: '60vh' }}>
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="以 Markdown 撰寫內容…"
-            className="p-4 font-mono text-sm text-sumi bg-white resize-none focus:outline-none border-r border-hairline leading-relaxed"
-          />
-          <div className="p-4 overflow-auto prose prose-sm max-w-none text-sumi">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || '*預覽將顯示在此*'}</ReactMarkdown>
+        <div className="flex flex-col border border-hairline rounded overflow-hidden">
+          <MarkdownToolbar textareaRef={contentRef} value={content} onChange={setContent} />
+          <div className="grid grid-cols-2 gap-0" style={{ height: '60vh' }}>
+            <textarea
+              ref={contentRef}
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder="以 Markdown 撰寫內容…"
+              className="p-4 font-mono text-sm text-sumi bg-white resize-none focus:outline-none border-r border-hairline leading-relaxed"
+            />
+            <div className="p-4 overflow-auto prose prose-sm max-w-none text-sumi">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || '*預覽將顯示在此*'}</ReactMarkdown>
+            </div>
           </div>
         </div>
 
