@@ -8,6 +8,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class AccountUpdateRequest(BaseModel):
+    username: str | None = None
+    email: str | None = None
+    current_password: str
+    new_password: str | None = None
+
+
 class UserResponse(BaseModel):
     id: int
     username: str

@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.auth import LoginRequest, LoginResponse, UserResponse
+from app.schemas.auth import AccountUpdateRequest, LoginRequest, LoginResponse, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -47,4 +47,25 @@ async def logout(
 
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    body: AccountUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="目前密碼不正確")
+
+    if body.username:
+        current_user.username = body.username
+    if body.email:
+        current_user.email = body.email
+    if body.new_password:
+        current_user.hashed_password = hash_password(body.new_password)
+
+    await db.commit()
+    await db.refresh(current_user)
     return current_user

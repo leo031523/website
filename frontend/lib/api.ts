@@ -29,6 +29,9 @@ export const api = {
 
   getMe: () => req<User>('/auth/me'),
 
+  updateMe: (payload: { username?: string; email?: string; current_password: string; new_password?: string }) =>
+    req<User>('/auth/me', { method: 'PUT', body: JSON.stringify(payload) }),
+
   // ── Articles ─────────────────────────────────────────
   listArticles: (params?: { page?: number; page_size?: number }) => {
     const q = new URLSearchParams(
