@@ -1,0 +1,135 @@
+def test_create_ai_settings_never_returns_plaintext_key(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret-key-abcdef1234"},
+    )
+    assert res.status_code == 201
+    data = res.json()
+    cleanup("ai_provider_settings", data["id"])
+
+    assert data["is_configured"] is True
+    assert data["api_key_suffix"] == "****1234"
+    assert "secret-key-abcdef1234" not in res.text
+    assert "encrypted_api_key" not in data
+
+
+def test_create_requires_login(client):
+    res = client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash"},
+    )
+    assert res.status_code == 401
+
+
+def test_openai_compatible_requires_base_url(auth_client):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "openai_compatible", "model": "llama3"},
+    )
+    assert res.status_code == 422
+
+
+def test_non_compatible_provider_rejects_base_url(auth_client):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "base_url": "http://localhost:11434"},
+    )
+    assert res.status_code == 422
+
+
+def test_list_settings_never_leaks_encrypted_key_field(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret-abc123"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.get("/api/ai/settings")
+    assert res.status_code == 200
+    assert "secret-abc123" not in res.text
+    assert "encrypted_api_key" not in res.text
+
+
+def test_update_blank_api_key_keeps_existing_key(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "original-key-1234"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.put(f"/api/ai/settings/{settings_id}", json={"model": "gemini-2.0-pro"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["model"] == "gemini-2.0-pro"
+    assert data["is_configured"] is True
+
+
+def test_update_with_remove_api_key_clears_it(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "original-key-1234"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.put(f"/api/ai/settings/{settings_id}", json={"remove_api_key": True})
+    assert res.status_code == 200
+    assert res.json()["is_configured"] is False
+
+
+def test_enable_requires_api_key(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.post(f"/api/ai/settings/{settings_id}/enable")
+    assert res.status_code == 400
+
+
+def test_enabling_one_provider_disables_others(auth_client, cleanup):
+    res1 = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "key-one-1234"},
+    )
+    id1 = res1.json()["id"]
+    cleanup("ai_provider_settings", id1)
+
+    res2 = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-two-5678"},
+    )
+    id2 = res2.json()["id"]
+    cleanup("ai_provider_settings", id2)
+
+    res = auth_client.post(f"/api/ai/settings/{id1}/enable")
+    assert res.status_code == 200
+    assert res.json()["is_enabled"] is True
+
+    res = auth_client.post(f"/api/ai/settings/{id2}/enable")
+    assert res.status_code == 200
+    assert res.json()["is_enabled"] is True
+
+    res = auth_client.get("/api/ai/settings")
+    enabled = [s for s in res.json() if s["is_enabled"]]
+    assert len(enabled) == 1
+    assert enabled[0]["id"] == id2
+
+
+def test_delete_settings(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.delete(f"/api/ai/settings/{settings_id}")
+    assert res.status_code == 204
+
+    res = auth_client.get("/api/ai/settings")
+    assert settings_id not in [s["id"] for s in res.json()]

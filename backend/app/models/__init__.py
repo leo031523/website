@@ -1,3 +1,4 @@
+from .ai_settings import AIProvider, AIProviderSettings
 from .article import Article, ArticleStatus
 from .base import Base
 from .category import Category
@@ -21,4 +22,6 @@ __all__ = [
     "Project",
     "project_tags_table",
     "project_tools",
+    "AIProvider",
+    "AIProviderSettings",
 ]

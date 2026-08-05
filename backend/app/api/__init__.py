@@ -1,3 +1,4 @@
+from .ai_settings import router as ai_settings_router
 from .articles import router as articles_router
 from .auth import router as auth_router
 from .categories import router as categories_router
@@ -16,4 +17,5 @@ __all__ = [
     "projects_router",
     "tools_router",
     "search_router",
+    "ai_settings_router",
 ]

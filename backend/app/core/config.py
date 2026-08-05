@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     media_dir: str = "/app/media"
     # 正式環境務必設為 true，讓登入 Cookie 帶有 Secure 屬性（僅透過 HTTPS 傳送）
     cookie_secure: bool = False
+    # 用來加密 AI provider API key 的 master key；遺失即無法解密已存的 key，
+    # 只能請管理者重新輸入一次。
+    ai_master_key: str = _INSECURE_DEFAULT
 
     model_config = {"env_file": ".env"}
 
@@ -30,6 +33,8 @@ class Settings(BaseSettings):
             problems.append(f"JWT_SECRET 必須設定為至少 {_MIN_SECRET_LENGTH} 字元的隨機字串")
         if self.revalidate_secret == _INSECURE_DEFAULT or len(self.revalidate_secret) < _MIN_SECRET_LENGTH:
             problems.append(f"REVALIDATE_SECRET 必須設定為至少 {_MIN_SECRET_LENGTH} 字元的隨機字串")
+        if self.ai_master_key == _INSECURE_DEFAULT or len(self.ai_master_key) < _MIN_SECRET_LENGTH:
+            problems.append(f"AI_MASTER_KEY 必須設定為至少 {_MIN_SECRET_LENGTH} 字元的隨機字串")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE 必須設為 true（正式環境的登入 Cookie 需要 Secure 屬性）")
 
