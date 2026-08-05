@@ -48,3 +48,11 @@ class AIProviderSettingsResponse(BaseModel):
     top_k: int
     created_at: datetime
     updated_at: datetime
+
+
+class AITestConnectionResponse(BaseModel):
+    provider: AIProvider
+    model: str
+    success: bool
+    latency_ms: float | None = None
+    error_category: str | None = None

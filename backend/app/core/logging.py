@@ -37,3 +37,8 @@ def configure_logging() -> None:
     # 避免同一個請求被記錄兩次、格式又不一致。
     logging.getLogger("uvicorn.access").handlers = []
     logging.getLogger("uvicorn.access").propagate = False
+    # httpx/httpcore 預設會在 INFO 等級記錄每個外送請求的完整 URL；
+    # 若呼叫端把密鑰放在 query string（即使我們自己盡量避免），這行
+    # log 就會外洩密鑰。調高等級到 WARNING，只保留連線層級的真正異常。
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)

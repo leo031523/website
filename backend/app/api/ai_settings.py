@@ -1,8 +1,11 @@
+import logging
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret, mask_secret
+from app.core.crypto import decrypt_secret, encrypt_secret, mask_secret
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.ai_settings import AIProvider, AIProviderSettings
@@ -11,9 +14,23 @@ from app.schemas.ai_settings import (
     AIProviderSettingsCreate,
     AIProviderSettingsResponse,
     AIProviderSettingsUpdate,
+    AITestConnectionResponse,
 )
+from app.services.ai.base import ChatMessage, ProviderError
+from app.services.ai.registry import get_adapter
 
 router = APIRouter(prefix="/api/ai/settings", tags=["ai-settings"])
+logger = logging.getLogger("app.ai")
+
+_TEST_COOLDOWN_SECONDS = 5.0
+_TEST_MAX_OUTPUT_TOKENS = 16
+_TEST_TIMEOUT_SECONDS = 10.0
+_TEST_SYSTEM_PROMPT = "這是連線測試，請只回覆「ok」兩個字，不要說明任何其他內容。"
+_TEST_MESSAGE = "ping"
+
+# in-process 節流：避免後台重複點擊測試連線按鈕造成不必要的 provider 費用。
+# 單一 process、單一管理者的個人網站規模，不需要額外引入 Redis 之類的共用儲存。
+_last_test_at: dict[int, float] = {}
 
 
 def _to_response(s: AIProviderSettings) -> AIProviderSettingsResponse:
@@ -167,3 +184,75 @@ async def disable_ai_settings(
     await db.commit()
     await db.refresh(settings_row)
     return _to_response(settings_row)
+
+
+@router.post("/{settings_id}/test", response_model=AITestConnectionResponse)
+async def test_ai_connection(
+    settings_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """用最小 token 與固定測試訊息驗證 provider 連線是否正常。
+
+    只回傳 provider、model、延遲與安全化後的錯誤分類；絕不回傳
+    原始 request header、API key 或 provider 的完整 response。
+    """
+    result = await db.execute(
+        select(AIProviderSettings).where(AIProviderSettings.id == settings_id)
+    )
+    settings_row = result.scalar_one_or_none()
+    if not settings_row:
+        raise HTTPException(status_code=404, detail="找不到 AI provider 設定")
+    if not settings_row.encrypted_api_key:
+        raise HTTPException(status_code=400, detail="尚未設定 API key")
+
+    now = time.monotonic()
+    last = _last_test_at.get(settings_id)
+    if last is not None and (now - last) < _TEST_COOLDOWN_SECONDS:
+        wait = _TEST_COOLDOWN_SECONDS - (now - last)
+        raise HTTPException(status_code=429, detail=f"請等待 {wait:.0f} 秒後再測試連線")
+    _last_test_at[settings_id] = now
+
+    api_key = decrypt_secret(settings_row.encrypted_api_key)
+    adapter = get_adapter(settings_row.provider)
+
+    try:
+        result = await adapter.chat(
+            api_key=api_key,
+            model=settings_row.model,
+            system_prompt=_TEST_SYSTEM_PROMPT,
+            messages=[ChatMessage(role="user", content=_TEST_MESSAGE)],
+            timeout_seconds=min(settings_row.timeout_seconds, _TEST_TIMEOUT_SECONDS),
+            max_output_tokens=_TEST_MAX_OUTPUT_TOKENS,
+            base_url=settings_row.base_url,
+        )
+    except ProviderError as exc:
+        logger.warning(
+            "ai connection test failed",
+            extra={
+                "settings_id": settings_id,
+                "provider": settings_row.provider,
+                "error_category": exc.category,
+            },
+        )
+        return AITestConnectionResponse(
+            provider=settings_row.provider,
+            model=settings_row.model,
+            success=False,
+            error_category=exc.category,
+        )
+
+    logger.info(
+        "ai connection test succeeded",
+        extra={
+            "settings_id": settings_id,
+            "provider": settings_row.provider,
+            "latency_ms": round(result.latency_ms, 1),
+        },
+    )
+    return AITestConnectionResponse(
+        provider=settings_row.provider,
+        model=settings_row.model,
+        success=True,
+        latency_ms=round(result.latency_ms, 1),
+    )
