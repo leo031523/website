@@ -92,3 +92,31 @@ def test_published_project_visible_to_public(auth_client, client, cleanup):
 
     res = client.get(f"/api/projects/{project['slug']}")
     assert res.status_code == 200
+
+
+def test_bare_domain_url_is_normalized_to_https(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/projects",
+        json=_payload(repo_url="github.com/example/repo", demo_url="example.com"),
+    )
+    assert res.status_code == 201
+    project = res.json()
+    cleanup("projects", project["id"])
+    assert project["repo_url"] == "https://github.com/example/repo"
+    assert project["demo_url"] == "https://example.com"
+
+
+def test_javascript_scheme_url_rejected(auth_client):
+    res = auth_client.post(
+        "/api/projects",
+        json=_payload(repo_url="javascript:alert(1)"),
+    )
+    assert res.status_code == 422
+
+
+def test_data_scheme_url_rejected(auth_client):
+    res = auth_client.post(
+        "/api/projects",
+        json=_payload(demo_url="data:text/html,<script>alert(1)</script>"),
+    )
+    assert res.status_code == 422

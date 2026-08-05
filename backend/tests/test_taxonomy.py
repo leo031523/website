@@ -71,3 +71,20 @@ def test_tool_create_read_update_delete(auth_client, cleanup):
 def test_tool_write_requires_login(client):
     res = client.post("/api/tools", json={"name": "x"})
     assert res.status_code == 401
+
+
+def test_tool_url_normalized_to_https(auth_client, cleanup):
+    unique = uuid.uuid4().hex[:8]
+    res = auth_client.post("/api/tools", json={"name": f"工具-{unique}", "url": "example.com"})
+    assert res.status_code == 201
+    tool = res.json()
+    cleanup("tools", tool["id"])
+    assert tool["url"] == "https://example.com"
+
+
+def test_tool_url_rejects_javascript_scheme(auth_client):
+    unique = uuid.uuid4().hex[:8]
+    res = auth_client.post(
+        "/api/tools", json={"name": f"工具-{unique}", "url": "javascript:alert(1)"}
+    )
+    assert res.status_code == 422

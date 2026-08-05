@@ -32,6 +32,28 @@ export default function Dashboard() {
         <p className="text-sumi-light text-sm">載入中…</p>
       ) : (
         <div className="flex flex-col gap-10">
+          {/* Primary actions */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/articles/new"
+              className="text-sm bg-sumi text-washi px-4 py-2 rounded hover:bg-ai transition-colors"
+            >
+              + 新增文章
+            </Link>
+            <Link
+              href="/admin/projects/new"
+              className="text-sm border border-hairline px-4 py-2 rounded text-sumi hover:bg-washi-card transition-colors"
+            >
+              + 新增作品
+            </Link>
+            <Link
+              href="/admin/articles"
+              className="text-sm text-sumi-light hover:text-ai transition-colors ml-auto"
+            >
+              管理所有文章 →
+            </Link>
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4">
             <StatCard label="已發布文章" value={publishedArticles} />

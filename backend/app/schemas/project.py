@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.schemas.tag import TagResponse
 from app.schemas.tool import ToolResponse
+from app.schemas.validators import normalize_external_url
 
 
 class ProjectCreate(BaseModel):
@@ -22,6 +23,11 @@ class ProjectCreate(BaseModel):
     tool_ids: list[int] = []
     cover_image_id: int | None = None
 
+    @field_validator("repo_url", "demo_url")
+    @classmethod
+    def _validate_urls(cls, v: str | None) -> str | None:
+        return normalize_external_url(v)
+
 
 class ProjectUpdate(BaseModel):
     title: str | None = None
@@ -37,6 +43,11 @@ class ProjectUpdate(BaseModel):
     tag_ids: list[int] | None = None
     tool_ids: list[int] | None = None
     cover_image_id: int | None = None
+
+    @field_validator("repo_url", "demo_url")
+    @classmethod
+    def _validate_urls(cls, v: str | None) -> str | None:
+        return normalize_external_url(v)
 
 
 class ProjectListItem(BaseModel):

@@ -3,21 +3,41 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminShell from '@/components/admin/AdminShell'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
+import { useToast } from '@/components/admin/Toast'
 import { api } from '@/lib/api'
 import type { Project } from '@/lib/types'
 
 export default function ProjectList() {
+  const confirm = useConfirm()
+  const toast = useToast()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     api.listProjects().then(setProjects).finally(() => setLoading(false))
   }, [])
 
   async function handleDelete(id: number, title: string) {
-    if (!confirm(`刪除「${title}」？`)) return
-    await api.deleteProject(id)
-    setProjects(prev => prev.filter(p => p.id !== id))
+    const ok = await confirm({
+      title: '刪除作品',
+      message: `確定要刪除「${title}」嗎？此操作無法復原。`,
+      confirmLabel: '刪除',
+      danger: true,
+    })
+    if (!ok) return
+
+    setDeletingId(id)
+    try {
+      await api.deleteProject(id)
+      setProjects(prev => prev.filter(p => p.id !== id))
+      toast.success(`已刪除「${title}」`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '刪除失敗')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -72,9 +92,13 @@ export default function ProjectList() {
                   {new Date(p.updated_at).toLocaleDateString('zh-TW')}
                 </td>
                 <td className="py-3 text-right">
-                  <button onClick={() => handleDelete(p.id, p.title)}
-                    className="text-xs text-sumi-light hover:text-vermillion opacity-0 group-hover:opacity-100 transition-all">
-                    刪除
+                  <button
+                    onClick={() => handleDelete(p.id, p.title)}
+                    disabled={deletingId === p.id}
+                    aria-label={`刪除作品「${p.title}」`}
+                    className="text-xs text-sumi-light hover:text-vermillion opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all disabled:opacity-50"
+                  >
+                    {deletingId === p.id ? '刪除中…' : '刪除'}
                   </button>
                 </td>
               </tr>

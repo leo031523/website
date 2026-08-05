@@ -2,6 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react'
 import AdminShell from '@/components/admin/AdminShell'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
+import { useToast } from '@/components/admin/Toast'
 import { api } from '@/lib/api'
 import type { MediaItem } from '@/lib/types'
 
@@ -73,24 +75,35 @@ function MediaCard({
 
   return (
     <div className="border border-hairline rounded bg-white">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={item.url}
-        alt={item.alt_text ?? item.filename}
-        className="w-full aspect-square object-cover rounded-t cursor-zoom-in"
+      <button
+        type="button"
         onClick={() => onPreview(item)}
-      />
+        aria-label={`預覽「${item.alt_text || item.filename}」`}
+        className="block w-full"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.url}
+          alt={item.alt_text ?? item.filename}
+          className="w-full aspect-square object-cover rounded-t cursor-zoom-in"
+        />
+      </button>
       <div className="p-2">
         <div className="flex items-start gap-1 mb-1">
           {editing ? (
-            <input
-              autoFocus
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-              className="text-xs text-sumi flex-1 border-b border-ai outline-none bg-transparent"
-            />
+            <>
+              <label htmlFor={`media-alt-${item.id}`} className="sr-only">圖片說明文字</label>
+              <input
+                id={`media-alt-${item.id}`}
+                name="alt_text"
+                autoFocus
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+                className="text-xs text-sumi flex-1 border-b border-ai outline-none bg-transparent"
+              />
+            </>
           ) : (
             <p className="text-xs text-sumi truncate flex-1">
               {item.alt_text || item.filename}
@@ -100,27 +113,32 @@ function MediaCard({
             <button
               onClick={() => setMenuOpen(o => !o)}
               className="text-sumi-light hover:text-sumi transition-colors px-0.5 leading-none text-sm"
-              aria-label="選單"
+              aria-label={`「${item.alt_text || item.filename}」的操作選單`}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
             >
               ⋯
             </button>
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-5 z-20 bg-white border border-hairline rounded shadow-sm py-1 w-24">
+                <div role="menu" className="absolute right-0 top-5 z-20 bg-white border border-hairline rounded shadow-sm py-1 w-24">
                   <button
+                    role="menuitem"
                     onClick={startEdit}
                     className="block w-full text-left px-3 py-1.5 text-xs text-sumi hover:bg-washi-card transition-colors"
                   >
                     改名
                   </button>
                   <button
+                    role="menuitem"
                     onClick={() => { onCopy(item); setMenuOpen(false) }}
                     className="block w-full text-left px-3 py-1.5 text-xs text-sumi hover:bg-washi-card transition-colors"
                   >
                     {copiedId === item.id ? '已複製！' : '複製 URL'}
                   </button>
                   <button
+                    role="menuitem"
                     onClick={() => { setMenuOpen(false); onDelete(item.id) }}
                     className="block w-full text-left px-3 py-1.5 text-xs text-vermillion hover:bg-washi-card transition-colors"
                   >
@@ -140,6 +158,8 @@ function MediaCard({
 }
 
 export default function MediaLibrary() {
+  const confirm = useConfirm()
+  const toast = useToast()
   const [items, setItems] = useState<MediaItem[]>([])
   const [uploading, setUploading] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
@@ -157,8 +177,9 @@ export default function MediaLibrary() {
     try {
       const results = await Promise.all(Array.from(files).map(f => api.uploadMedia(f)))
       setItems(prev => [...results.reverse(), ...prev])
+      toast.success(results.length > 1 ? `已上傳 ${results.length} 個檔案` : '已上傳圖片')
     } catch (e) {
-      alert(e instanceof Error ? e.message : '上傳失敗')
+      toast.error(e instanceof Error ? e.message : '上傳失敗')
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -166,14 +187,32 @@ export default function MediaLibrary() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('確定刪除此檔案？')) return
-    await api.deleteMedia(id)
-    setItems(prev => prev.filter(m => m.id !== id))
+    const item = items.find(m => m.id === id)
+    const ok = await confirm({
+      title: '刪除媒體檔案',
+      message: `確定要刪除「${item?.alt_text || item?.filename || '此檔案'}」嗎？此操作無法復原。`,
+      confirmLabel: '刪除',
+      danger: true,
+    })
+    if (!ok) return
+
+    try {
+      await api.deleteMedia(id)
+      setItems(prev => prev.filter(m => m.id !== id))
+      toast.success('已刪除檔案')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '刪除失敗')
+    }
   }
 
   async function handleRename(id: number, name: string) {
-    const updated = await api.updateMedia(id, { alt_text: name || null })
-    setItems(prev => prev.map(m => m.id === id ? updated : m))
+    try {
+      const updated = await api.updateMedia(id, { alt_text: name || null })
+      setItems(prev => prev.map(m => m.id === id ? updated : m))
+      toast.success('已儲存變更')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '儲存失敗')
+    }
   }
 
   function copyUrl(item: MediaItem) {

@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AdminShell from '@/components/admin/AdminShell'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
+import { useToast } from '@/components/admin/Toast'
 import { api } from '@/lib/api'
 import type { Article } from '@/lib/types'
 
 export default function ArticleList() {
-  const router = useRouter()
+  const confirm = useConfirm()
+  const toast = useToast()
   const [articles, setArticles] = useState<Article[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     api.listArticles({ page_size: 100 })
@@ -20,10 +23,25 @@ export default function ArticleList() {
   }, [])
 
   async function handleDelete(id: number, title: string) {
-    if (!confirm(`刪除「${title}」？此操作無法復原。`)) return
-    await api.deleteArticle(id)
-    setArticles(prev => prev.filter(a => a.id !== id))
-    setTotal(t => t - 1)
+    const ok = await confirm({
+      title: '刪除文章',
+      message: `確定要刪除「${title}」嗎？此操作無法復原。`,
+      confirmLabel: '刪除',
+      danger: true,
+    })
+    if (!ok) return
+
+    setDeletingId(id)
+    try {
+      await api.deleteArticle(id)
+      setArticles(prev => prev.filter(a => a.id !== id))
+      setTotal(t => t - 1)
+      toast.success(`已刪除「${title}」`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '刪除失敗')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -80,9 +98,11 @@ export default function ArticleList() {
                 <td className="py-3 text-right">
                   <button
                     onClick={() => handleDelete(a.id, a.title)}
-                    className="text-xs text-sumi-light hover:text-vermillion transition-colors opacity-0 group-hover:opacity-100"
+                    disabled={deletingId === a.id}
+                    aria-label={`刪除文章「${a.title}」`}
+                    className="text-xs text-sumi-light hover:text-vermillion transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-50"
                   >
-                    刪除
+                    {deletingId === a.id ? '刪除中…' : '刪除'}
                   </button>
                 </td>
               </tr>

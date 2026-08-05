@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 import AdminShell from '@/components/admin/AdminShell'
 import CoverImagePicker from '@/components/admin/CoverImagePicker'
 import MarkdownToolbar from '@/components/admin/MarkdownToolbar'
+import { useToast } from '@/components/admin/Toast'
 import { api } from '@/lib/api'
 import type { ArticlePayload, Category, Tag } from '@/lib/types'
 
@@ -23,6 +24,7 @@ export default function ArticleEditor() {
   const { id } = useParams<{ id: string }>()
   const isNew = id === 'new'
   const router = useRouter()
+  const toast = useToast()
 
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
@@ -38,7 +40,6 @@ export default function ArticleEditor() {
   const [tags, setTags] = useState<Tag[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
   const contentRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-generate slug from title
@@ -83,14 +84,15 @@ export default function ArticleEditor() {
       cover_image_id: coverImageId,
     }
     try {
-      const saved = isNew
+      const savedArticle = isNew
         ? await api.createArticle(payload)
         : await api.updateArticle(Number(id), payload)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-      if (isNew) router.replace(`/admin/articles/${saved.id}`)
+      toast.success(targetStatus === 'published' ? '文章已發布' : '草稿已儲存')
+      if (isNew) router.replace(`/admin/articles/${savedArticle.id}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '儲存失敗')
+      const message = e instanceof Error ? e.message : '儲存失敗'
+      setError(message)
+      toast.error(message)
     } finally {
       setSaving(false)
     }
@@ -113,38 +115,48 @@ export default function ArticleEditor() {
           <span className="text-hairline">|</span>
           <span className="text-xs text-sumi-light">{isNew ? '新增文章' : '編輯文章'}</span>
           <div className="ml-auto flex items-center gap-3">
-            {saved && <span className="text-xs text-ai">已儲存 ✓</span>}
-            {error && <span className="text-xs text-vermillion">{error}</span>}
+            {error && (
+              <span id="article-form-error" role="alert" className="text-xs text-vermillion">
+                {error}
+              </span>
+            )}
             <button
               onClick={() => save('draft')}
               disabled={saving}
               className="text-sm border border-hairline px-4 py-1.5 rounded text-sumi hover:bg-washi-card transition-colors disabled:opacity-50"
             >
-              儲存草稿
+              {saving ? '儲存中…' : '儲存草稿'}
             </button>
             <button
               onClick={() => save('published')}
               disabled={saving}
               className="text-sm bg-ai text-washi px-4 py-1.5 rounded hover:bg-sumi transition-colors disabled:opacity-50"
             >
-              發布
+              {saving ? '發布中…' : '發布'}
             </button>
           </div>
         </div>
 
         {/* Title */}
+        <label htmlFor="article-title" className="sr-only">文章標題</label>
         <input
+          id="article-title"
+          name="title"
           type="text"
           placeholder="文章標題"
           value={title}
           onChange={e => setTitle(e.target.value)}
+          aria-describedby={error ? 'article-form-error' : undefined}
+          aria-invalid={error ? true : undefined}
           className="font-serif text-2xl text-sumi border-0 border-b border-hairline bg-transparent focus:outline-none focus:border-ai py-2 transition-colors placeholder:text-hairline"
         />
 
         {/* Slug */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-sumi-light">slug:</span>
+          <label htmlFor="article-slug" className="text-sumi-light">slug:</label>
           <input
+            id="article-slug"
+            name="slug"
             type="text"
             value={slug}
             onChange={e => { setSlug(e.target.value); setSlugManual(true) }}
@@ -164,7 +176,10 @@ export default function ArticleEditor() {
         <div className="flex flex-col border border-hairline rounded overflow-hidden">
           <MarkdownToolbar textareaRef={contentRef} value={content} onChange={setContent} />
           <div className="grid grid-cols-2 gap-0" style={{ height: '60vh' }}>
+            <label htmlFor="article-content" className="sr-only">文章內容（Markdown）</label>
             <textarea
+              id="article-content"
+              name="content_md"
               ref={contentRef}
               value={content}
               onChange={e => setContent(e.target.value)}
@@ -181,8 +196,10 @@ export default function ArticleEditor() {
         <div className="grid grid-cols-3 gap-6">
           {/* Excerpt */}
           <div className="col-span-2 flex flex-col gap-1.5">
-            <label className="text-xs text-sumi-light tracking-wide">摘要（選填）</label>
+            <label htmlFor="article-excerpt" className="text-xs text-sumi-light tracking-wide">摘要（選填）</label>
             <textarea
+              id="article-excerpt"
+              name="excerpt"
               value={excerpt}
               onChange={e => setExcerpt(e.target.value)}
               rows={2}
@@ -192,8 +209,10 @@ export default function ArticleEditor() {
 
           {/* Category */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-sumi-light tracking-wide">分類</label>
+            <label htmlFor="article-category" className="text-xs text-sumi-light tracking-wide">分類</label>
             <select
+              id="article-category"
+              name="category_id"
               value={categoryId ?? ''}
               onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : null)}
               className="border border-hairline rounded px-3 py-2 text-sm text-sumi bg-white focus:outline-none focus:border-ai transition-colors"
@@ -209,13 +228,14 @@ export default function ArticleEditor() {
         {/* Tags */}
         {tags.length > 0 && (
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-sumi-light tracking-wide">標籤</label>
+            <span className="text-xs text-sumi-light tracking-wide">標籤</span>
             <div className="flex flex-wrap gap-2">
               {tags.map(t => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => toggleTag(t.id)}
+                  aria-pressed={selectedTagIds.includes(t.id)}
                   className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                     selectedTagIds.includes(t.id)
                       ? 'border-ai bg-ai/10 text-ai'

@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.schemas.validators import normalize_external_url
 
 
 class ToolCreate(BaseModel):
@@ -8,6 +10,11 @@ class ToolCreate(BaseModel):
     icon_url: str | None = None
     description: str | None = None
 
+    @field_validator("url")
+    @classmethod
+    def _validate_url(cls, v: str | None) -> str | None:
+        return normalize_external_url(v)
+
 
 class ToolUpdate(BaseModel):
     name: str | None = None
@@ -15,6 +22,11 @@ class ToolUpdate(BaseModel):
     url: str | None = None
     icon_url: str | None = None
     description: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def _validate_url(cls, v: str | None) -> str | None:
+        return normalize_external_url(v)
 
 
 class ToolResponse(BaseModel):
