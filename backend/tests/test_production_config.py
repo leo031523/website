@@ -4,8 +4,12 @@
 已經建立好的 Settings 單例（Settings 只在模組匯入當下讀取一次環境變數）。
 """
 
+import os
 import subprocess
 import sys
+from pathlib import Path
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _BASE_ENV = {
     "DATABASE_URL": "postgresql://portfolio:test@localhost:5432/portfolio_db",
@@ -16,12 +20,10 @@ _STRONG_SECRET = "a" * 40
 
 
 def _run_with_env(extra_env: dict) -> subprocess.CompletedProcess:
-    import os
-
     env = {**os.environ, **_BASE_ENV, **extra_env}
     return subprocess.run(
         [sys.executable, "-c", "from app.core.config import settings"],
-        cwd="/app",
+        cwd=_BACKEND_DIR,
         env=env,
         capture_output=True,
         text=True,
