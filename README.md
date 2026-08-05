@@ -36,20 +36,27 @@ docker compose up -d
 docker compose exec backend alembic upgrade head
 ```
 
-建立管理者帳號（系統不提供公開註冊，僅單一管理者）：
+建立管理者帳號（系統不提供公開註冊，僅單一管理者，重複執行不會建立重複帳號）：
 
 ```bash
-docker compose exec backend python -c "
-from app.core.security import hash_password
-print(hash_password('你的密碼'))
-"
+docker compose exec -it backend python -m app.cli create-admin
 ```
 
-將產生的雜湊值連同帳號手動寫入 `users` 資料表，例如：
+會互動式詢問帳號、Email、密碼（密碼輸入不會顯示在畫面上，也不會留在 shell history）。若要在非互動環境（例如部署腳本）中自動建立，可改用環境變數：
 
 ```bash
-docker compose exec db psql -U portfolio -d portfolio_db \
-  -c "INSERT INTO users (username, email, hashed_password) VALUES ('admin', 'you@example.com', '<上面產生的雜湊值>');"
+docker compose exec \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_EMAIL=you@example.com \
+  -e ADMIN_PASSWORD=your_password \
+  backend python -m app.cli create-admin
+```
+
+本機（未使用 Docker）開發時，在 `backend/` 目錄下啟用虛擬環境後執行同一支指令：
+
+```bash
+cd backend
+python -m app.cli create-admin
 ```
 
 完成後開啟 <http://localhost>，後台入口在 `/admin/login`。
