@@ -5,9 +5,8 @@ os.environ.setdefault("DATABASE_URL", "postgresql://portfolio:test@localhost:543
 os.environ.setdefault("JWT_SECRET", "ci-test-secret-key-must-be-32-chars!")
 os.environ.setdefault("MEDIA_DIR", "/tmp/test-media")
 
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.main import app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 client = TestClient(app)
 

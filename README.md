@@ -12,7 +12,7 @@
 | 後端 | FastAPI + SQLAlchemy (async) + Alembic |
 | 資料庫 | PostgreSQL 16 |
 | 部署 | Docker Compose + nginx + Certbot / Let's Encrypt |
-| CI | GitHub Actions（lint、型別檢查、後端測試） |
+| CI | GitHub Actions（lint、型別檢查、production build、後端測試、依賴安全稽核） |
 
 ## 功能
 
@@ -75,6 +75,10 @@ flowchart LR
 ## 部署
 
 正式環境使用 `docker-compose.prod.yml`，搭配 `scripts/` 下的備份（`backup.sh`）、還原（`restore.sh`）與 Certbot 憑證初始化（`init-certbot.sh`）腳本。
+
+## 依賴安全
+
+CI 會執行 `npm audit`（擋 critical 漏洞）與後端 `ruff check`；Dependabot 每週自動檢查 npm、pip、Docker base image 與 GitHub Actions 的更新。目前已知且暫時無法在不做 Next.js 大版本升級下解決的殘留風險，記錄在 [`SECURITY_NOTES.md`](./SECURITY_NOTES.md)。
 
 ## 里程碑
 

@@ -1,7 +1,7 @@
 import math
 import re
 import unicodedata
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -167,7 +167,7 @@ async def create_article(
         author_id=current_user.id,
     )
     if body.status == ArticleStatus.published:
-        article.published_at = datetime.now(timezone.utc)
+        article.published_at = datetime.now(UTC)
 
     if body.tag_ids:
         tags = (await db.execute(select(Tag).where(Tag.id.in_(body.tag_ids)))).scalars().all()
@@ -225,9 +225,9 @@ async def update_article(
 
     # Set published_at only on first publish
     if article.status == ArticleStatus.published and not was_published and not article.published_at:
-        article.published_at = datetime.now(timezone.utc)
+        article.published_at = datetime.now(UTC)
 
-    article.updated_at = datetime.now(timezone.utc)
+    article.updated_at = datetime.now(UTC)
     await db.commit()
 
     result = await db.execute(

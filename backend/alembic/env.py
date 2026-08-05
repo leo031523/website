@@ -10,8 +10,14 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Import all models so Alembic can detect them
-from app.models import Base  # noqa: E402, F401
-from app.models import article, category, media, tag, user  # noqa: E402, F401
+from app.models import (  # noqa: E402, F401
+    Base,  # noqa: E402, F401
+    article,
+    category,
+    media,
+    tag,
+    user,
+)
 
 target_metadata = Base.metadata
 

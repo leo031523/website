@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_optional_user
-from app.models.project import Project, project_tags, project_tools
+from app.models.project import Project
 from app.models.tag import Tag
 from app.models.tool import Tool
 from app.models.user import User
@@ -132,7 +132,7 @@ async def create_project(
         cover_image_id=body.cover_image_id,
     )
     if body.status == "published":
-        project.updated_at = datetime.now(timezone.utc)
+        project.updated_at = datetime.now(UTC)
 
     if body.tag_ids:
         project.tags = list((await db.execute(select(Tag).where(Tag.id.in_(body.tag_ids)))).scalars())
@@ -182,7 +182,7 @@ async def update_project(
     if tool_ids is not None:
         project.tools = list((await db.execute(select(Tool).where(Tool.id.in_(tool_ids)))).scalars())
 
-    project.updated_at = datetime.now(timezone.utc)
+    project.updated_at = datetime.now(UTC)
     await db.commit()
 
     result = await db.execute(select(Project).options(*_load_options()).where(Project.id == project_id))
