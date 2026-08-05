@@ -52,7 +52,7 @@ docker compose exec db psql -U portfolio -d portfolio_db \
   -c "INSERT INTO users (username, email, hashed_password) VALUES ('admin', 'you@example.com', '<上面產生的雜湊值>');"
 ```
 
-完成後開啟 <http://localhost>，後台入口在 `/login`。
+完成後開啟 <http://localhost>，後台入口在 `/admin/login`。
 
 ## 架構
 
