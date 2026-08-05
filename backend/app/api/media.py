@@ -1,7 +1,9 @@
+import io
 import os
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from PIL import Image, ImageSequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +18,14 @@ router = APIRouter(prefix="/api/media", tags=["media"])
 
 MEDIA_DIR = settings.media_dir
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_PIXELS = 40_000_000  # 約 40 百萬像素上限，避免 decompression bomb
+
+_FORMAT_INFO = {
+    "JPEG": (".jpg", "image/jpeg"),
+    "PNG": (".png", "image/png"),
+    "GIF": (".gif", "image/gif"),
+    "WEBP": (".webp", "image/webp"),
+}
 
 
 def _to_response(m: Media) -> MediaResponse:
@@ -29,6 +38,77 @@ def _to_response(m: Media) -> MediaResponse:
         alt_text=m.alt_text,
         created_at=m.created_at,
     )
+
+
+async def _read_upload(file: UploadFile) -> bytes:
+    """以固定大小的區塊讀取上傳內容，超過上限立即中止，
+    避免不受信任的檔案大小/Content-Length 造成記憶體耗盡。"""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_SIZE:
+            raise HTTPException(status_code=400, detail="檔案超過 10 MB 限制")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _reencode_image(contents: bytes) -> tuple[bytes, str, str]:
+    """驗證並重新編碼圖片，不信任用戶端提供的 Content-Type 或副檔名。
+
+    回傳 (重新編碼後的 bytes, 副檔名, mime_type)。任何格式不符、
+    損毀、偽造或超過像素上限的檔案都會拋出 HTTPException(400)。
+    """
+    try:
+        probe = Image.open(io.BytesIO(contents))
+        probe.verify()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="檔案不是有效的圖片") from exc
+
+    try:
+        image = Image.open(io.BytesIO(contents))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="檔案不是有效的圖片") from exc
+
+    fmt = image.format
+    if fmt not in _FORMAT_INFO:
+        raise HTTPException(status_code=400, detail=f"不支援的圖片格式：{fmt}")
+
+    width, height = image.size
+    if width * height > MAX_PIXELS:
+        raise HTTPException(status_code=400, detail="圖片尺寸超過上限")
+
+    try:
+        image.load()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="檔案不是有效的圖片") from exc
+
+    ext, mime_type = _FORMAT_INFO[fmt]
+    buffer = io.BytesIO()
+
+    try:
+        if fmt == "GIF":
+            frames = [frame.convert("RGBA") for frame in ImageSequence.Iterator(image)]
+            frames[0].save(
+                buffer,
+                format="GIF",
+                save_all=True,
+                append_images=frames[1:],
+                loop=image.info.get("loop", 0),
+                duration=image.info.get("duration", 100),
+            )
+        elif fmt == "JPEG":
+            image.convert("RGB").save(buffer, format="JPEG", quality=90)
+        else:  # PNG, WEBP
+            img = image if image.mode in ("RGB", "RGBA") else image.convert("RGBA")
+            img.save(buffer, format=fmt, quality=90 if fmt == "WEBP" else None)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="圖片重新編碼失敗") from exc
+
+    return buffer.getvalue(), ext, mime_type
 
 
 @router.get("", response_model=list[MediaResponse])
@@ -46,29 +126,30 @@ async def upload_media(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail=f"不支援的檔案類型：{file.content_type}")
+    contents = await _read_upload(file)
+    image_bytes, ext, mime_type = _reencode_image(contents)
 
-    contents = await file.read()
-    if len(contents) > MAX_SIZE:
-        raise HTTPException(status_code=400, detail="檔案超過 10 MB 限制")
-
-    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
     unique_name = f"{uuid.uuid4().hex}{ext}"
     dest = os.path.join(MEDIA_DIR, unique_name)
 
     os.makedirs(MEDIA_DIR, exist_ok=True)
     with open(dest, "wb") as f:
-        f.write(contents)
+        f.write(image_bytes)
 
     media = Media(
         filename=unique_name,
         path=dest,
-        mime_type=file.content_type or "application/octet-stream",
-        size=len(contents),
+        mime_type=mime_type,
+        size=len(image_bytes),
     )
     db.add(media)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        if os.path.exists(dest):
+            os.remove(dest)
+        raise
     await db.refresh(media)
     return _to_response(media)
 
