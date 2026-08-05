@@ -54,7 +54,7 @@ jobs:
         working-directory: backend
       - run: alembic upgrade head
         working-directory: backend
-      - run: pytest tests/ -v
+      - run: pytest tests/ -v --cov=app --cov-report=term-missing --cov-fail-under=70
         working-directory: backend
 
   frontend-check:
