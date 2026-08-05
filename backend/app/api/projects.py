@@ -1,3 +1,4 @@
+import logging
 import re
 import unicodedata
 from datetime import UTC, datetime
@@ -23,6 +24,7 @@ from app.schemas.project import (
 )
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+logger = logging.getLogger("app.revalidate")
 
 
 def _slugify(title: str) -> str:
@@ -46,15 +48,21 @@ async def _unique_slug(slug: str, db: AsyncSession, exclude_id: int | None = Non
 
 
 async def _trigger_revalidate(slug: str) -> None:
+    """觸發前端 ISR revalidate；失敗不應影響作品發布本身是否成功，
+    但失敗原因必須記錄下來，而不是靜默吞掉。"""
     try:
         async with httpx.AsyncClient() as client:
-            await client.post(
+            response = await client.post(
                 f"{settings.frontend_url}/api/revalidate",
                 json={"slug": slug, "secret": settings.revalidate_secret, "type": "project"},
                 timeout=5.0,
             )
-    except Exception:
-        pass
+            response.raise_for_status()
+    except Exception as exc:
+        logger.warning(
+            "ISR revalidation failed",
+            extra={"content_type": "project", "slug": slug, "error_type": type(exc).__name__},
+        )
 
 
 def _load_options():
