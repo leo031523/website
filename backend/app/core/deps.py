@@ -22,7 +22,13 @@ async def _resolve_user(
     except jwt.PyJWTError:
         return None
     result = await db.execute(select(User).where(User.id == int(user_id_str)))
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user is None:
+        return None
+    # token_version 不符代表帳號密碼已變更，舊 token 一律視為失效
+    if payload.get("tv") != user.token_version:
+        return None
+    return user
 
 
 async def get_current_user(

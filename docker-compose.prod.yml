@@ -6,6 +6,11 @@
 #   bash scripts/init-certbot.sh <your-domain> <your-email>
 
 services:
+  backend:
+    environment:
+      - APP_ENV=production
+      - COOKIE_SECURE=true
+
   nginx:
     ports:
       - "80:80"
