@@ -67,7 +67,17 @@ def admin_user(db_conn) -> Iterator[dict]:
 
 @pytest.fixture
 def auth_client(admin_user) -> TestClient:
-    """已登入的 TestClient，帳號隨測試結束自動清除。"""
+    """已登入的 TestClient，帳號隨測試結束自動清除。
+
+    登入端點有 per-IP 速率限制（防暴力破解），但 TestClient 預設的
+    client host 固定是 "testclient"——如果不重置，整個測試套件裡
+    每一個用到這個 fixture 的測試都會疊加同一個配額，很快就會被自己
+    的測試觸發 429。這裡在登入前重置，讓每個測試各自獨立。
+    """
+    import app.api.auth as auth_module
+
+    auth_module._login_rate_limiter.reset("testclient")
+
     c = TestClient(app)
     res = c.post(
         "/api/auth/login",

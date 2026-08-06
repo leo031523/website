@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import decrypt_secret
 from app.core.database import get_db
+from app.core.request_utils import client_key
 from app.models.ai_settings import AIProviderSettings
 from app.schemas.ai_chat import ChatRequest, ChatResponse, ChatStatusResponse
 from app.services.ai.base import (
@@ -44,16 +45,6 @@ _PROVIDER_ERROR_STATUS: dict[str, tuple[int, str]] = {
 _DEFAULT_PROVIDER_ERROR = (502, "AI 服務發生未知錯誤，請稍後再試")
 
 
-def _client_key(request: Request) -> str:
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
 async def _enforce_body_size_limit(request: Request) -> None:
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > _MAX_REQUEST_BODY_BYTES:
@@ -87,7 +78,7 @@ async def chat(
 ):
     request_id = str(uuid.uuid4())
 
-    allowed, limit_message = check_rate_limit(_client_key(request))
+    allowed, limit_message = check_rate_limit(client_key(request))
     if not allowed:
         return _error(429, limit_message or "請求過於頻繁，請稍後再試", request_id)
 

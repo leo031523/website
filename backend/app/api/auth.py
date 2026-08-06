@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.rate_limit import SlidingWindowRateLimiter
+from app.core.request_utils import client_key
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import AccountUpdateRequest, LoginRequest, LoginResponse, UserResponse
@@ -13,6 +15,11 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 _COOKIE = "access_token"
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+
+# 防暴力破解：對登入端點做 per-IP 速率限制。單一管理者、單一 process
+# 的規模，記憶體內滑動視窗就夠用；額度比 AI 聊天 API 嚴格很多，因為
+# 這裡防的是密碼猜測，不是一般使用流量。
+_login_rate_limiter = SlidingWindowRateLimiter(per_minute=5, per_day=50)
 
 # CSRF 防護策略：
 # - Cookie 設定 SameSite=Lax，瀏覽器不會在跨站的狀態變更請求（POST/PUT/DELETE）
@@ -40,9 +47,14 @@ def _set_auth_cookie(response: Response, user: User) -> None:
 @router.post("/login", response_model=LoginResponse)
 async def login(
     body: LoginRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
+    allowed, limit_message = _login_rate_limiter.check(client_key(request))
+    if not allowed:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=limit_message)
+
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
     if not user or not verify_password(body.password, user.hashed_password):

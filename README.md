@@ -237,6 +237,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 修改密碼會讓帳號的 `token_version` 遞增，此後所有裝置上舊的 JWT 立即失效（僅本次請求換發的新 token 有效），避免密碼外洩後舊 session 仍可用。
 
+登入端點依來源 IP 做速率限制（每分鐘 5 次、每日 50 次，不論帳密是否正確都計入），防止暴力破解密碼；跟 AI 聊天 API 共用同一套記憶體內滑動視窗實作。
+
 ## 可觀察性與錯誤處理
 
 - `GET /api/health`：存活檢查（liveness），process 有在跑就回 200，不觸碰資料庫。
