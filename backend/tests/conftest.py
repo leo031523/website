@@ -34,6 +34,17 @@ def client() -> TestClient:
 
 
 @pytest.fixture
+async def db_session():
+    """給需要直接呼叫 async service 層函式（不透過 HTTP API）的測試用。
+    沿用 app 自己的 SessionLocal，測試環境下已經是 NullPool，
+    不會有 TestClient 跨 event loop 重用連線的問題。"""
+    from app.core.database import SessionLocal
+
+    async with SessionLocal() as session:
+        yield session
+
+
+@pytest.fixture
 def admin_user(db_conn) -> Iterator[dict]:
     """建立一個獨立、隨機命名的測試管理者帳號，測試結束後自動刪除。
 

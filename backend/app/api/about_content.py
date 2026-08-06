@@ -15,8 +15,6 @@ from app.schemas.about_content import AboutContentResponse, AboutContentUpdate
 router = APIRouter(prefix="/api/about", tags=["about"])
 logger = logging.getLogger("app.revalidate")
 
-_SINGLETON_ID = 1
-
 
 async def _trigger_revalidate() -> None:
     """觸發前端 ISR revalidate；失敗不應影響儲存本身是否成功，
@@ -38,7 +36,7 @@ async def _trigger_revalidate() -> None:
 
 @router.get("", response_model=AboutContentResponse)
 async def get_about(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(AboutContent).where(AboutContent.id == _SINGLETON_ID))
+    result = await db.execute(select(AboutContent).where(AboutContent.id == AboutContent.SINGLETON_ID))
     content = result.scalar_one_or_none()
     if not content:
         raise HTTPException(status_code=404, detail="尚未設定關於我內容")
@@ -51,10 +49,10 @@ async def update_about(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(AboutContent).where(AboutContent.id == _SINGLETON_ID))
+    result = await db.execute(select(AboutContent).where(AboutContent.id == AboutContent.SINGLETON_ID))
     content = result.scalar_one_or_none()
     if not content:
-        content = AboutContent(id=_SINGLETON_ID, content_md=body.content_md)
+        content = AboutContent(id=AboutContent.SINGLETON_ID, content_md=body.content_md)
         db.add(content)
     else:
         content.content_md = body.content_md
