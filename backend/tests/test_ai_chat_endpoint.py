@@ -172,6 +172,10 @@ def test_chat_returns_grounded_answer_with_valid_citation(auth_client, cleanup, 
         assert data["sources"][0]["id"] == chunk_id
         assert data["sources"][0]["url"] == f"/blog/{article['slug']}"
         assert "request_id" in data
+        # 來源已經用獨立的 citation card 呈現，答案本文不該再重複出現
+        # 內部的 [來源: xxx] 標記格式，那對一般使用者只是雜訊。
+        assert "[來源:" not in data["answer"]
+        assert f"這是關於{keyword}的說明" in data["answer"]
     finally:
         reset_rate_limit(_TEST_CLIENT_KEY)
 

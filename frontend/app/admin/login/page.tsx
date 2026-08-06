@@ -40,8 +40,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-sumi-light tracking-wide">帳號</label>
+            <label htmlFor="login-username" className="text-xs text-sumi-light tracking-wide">帳號</label>
             <input
+              id="login-username"
+              name="username"
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
@@ -52,8 +54,10 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-sumi-light tracking-wide">密碼</label>
+            <label htmlFor="login-password" className="text-xs text-sumi-light tracking-wide">密碼</label>
             <input
+              id="login-password"
+              name="password"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}

@@ -1,4 +1,9 @@
-from app.services.ai.prompt import FALLBACK_ANSWER, build_system_prompt, extract_valid_sources
+from app.services.ai.prompt import (
+    FALLBACK_ANSWER,
+    build_system_prompt,
+    extract_valid_sources,
+    strip_citation_markers,
+)
 from app.services.retrieval.retriever import RetrievedChunk
 
 
@@ -101,3 +106,16 @@ def test_extract_valid_sources_never_trusts_model_provided_url_or_title():
     assert len(sources) == 1
     assert sources[0].title == "正確標題"
     assert sources[0].url == "/blog/correct-slug"
+
+
+def test_strip_citation_markers_removes_marker_keeps_surrounding_text():
+    answer = "這是關於 FastAPI 的說明 [來源: article:12#chunk-3]。另一句話 [來源: article:12#chunk-4]。"
+    stripped = strip_citation_markers(answer)
+    assert "[來源:" not in stripped
+    assert "這是關於 FastAPI 的說明" in stripped
+    assert "另一句話" in stripped
+
+
+def test_strip_citation_markers_leaves_plain_answer_unchanged():
+    answer = "目前網站內容沒有足夠資訊回答這個問題。"
+    assert strip_citation_markers(answer) == answer

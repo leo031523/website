@@ -19,7 +19,12 @@ from app.services.ai.base import (
     ChatMessage,
     ProviderError,
 )
-from app.services.ai.prompt import FALLBACK_ANSWER, build_system_prompt, extract_valid_sources
+from app.services.ai.prompt import (
+    FALLBACK_ANSWER,
+    build_system_prompt,
+    extract_valid_sources,
+    strip_citation_markers,
+)
 from app.services.ai.rate_limit import check_rate_limit
 from app.services.ai.registry import get_adapter
 from app.services.retrieval.retriever import retrieve
@@ -148,7 +153,7 @@ async def chat(
     duration_ms = (time.monotonic() - start) * 1000
     sources = extract_valid_sources(result_chat.text, chunks)
     grounded = len(sources) > 0
-    answer = result_chat.text if grounded else FALLBACK_ANSWER
+    answer = strip_citation_markers(result_chat.text) if grounded else FALLBACK_ANSWER
 
     logger.info(
         "ai chat completed",

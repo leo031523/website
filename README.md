@@ -12,7 +12,7 @@
 | 後端 | FastAPI + SQLAlchemy (async) + Alembic |
 | 資料庫 | PostgreSQL 16 |
 | 部署 | Docker Compose + nginx + Certbot / Let's Encrypt |
-| CI | GitHub Actions（lint、型別檢查、production build、後端測試、依賴安全稽核） |
+| CI | GitHub Actions（lint、型別檢查、production build、後端測試、E2E、依賴安全稽核） |
 
 ## 功能
 
@@ -22,6 +22,7 @@
 - JWT 帳密登入（單一管理者，無公開註冊）
 - 全文搜尋、標籤 / 分類頁、RSS 訂閱、深色模式
 - SEO：sitemap、Open Graph、JSON-LD 結構化資料
+- AI 助理：以網站已發布文章／關於我頁面為依據回答問題（keyword retrieval + citation 驗證，非向量搜尋），只回答有真實來源支撐的內容，找不到依據時明確拒答；後台可設定 provider（目前完成 Google Gemini）與 API key（加密儲存）
 
 ## 本機開發
 
@@ -82,10 +83,12 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 `docker-compose.prod.yml` 會自動將 `APP_ENV` 設為 `production`、`COOKIE_SECURE` 設為 `true`。正式環境啟動時會強制驗證：
 
-- `JWT_SECRET`、`REVALIDATE_SECRET` 都不是預設值，且長度至少 32 字元
+- `JWT_SECRET`、`REVALIDATE_SECRET`、`AI_MASTER_KEY` 都不是預設值，且長度至少 32 字元
 - `COOKIE_SECURE` 必須為 `true`
 
 任何一項不符合，後端會直接拒絕啟動並印出具體原因，避免用預設密鑰或非 HTTPS-only cookie 跑正式站。
+
+`AI_MASTER_KEY` 用來加密資料庫中 AI provider 的 API key（Fernet 對稱加密），遺失這把 key 等於遺失所有已存的 API key，只能請管理者到後台重新輸入一次，不影響其他功能。
 
 ### 認證與 CSRF 防護
 
@@ -100,6 +103,30 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - 每個請求都會產生一個 `request_id`（回應標頭 `X-Request-ID`），並以 JSON 格式輸出到 stdout，包含 method、route、status、耗時；發生未預期例外時額外記錄錯誤類型。log 不包含密碼、JWT、API key 或請求/回應內容。
 - 文章／作品發布後觸發前端 ISR revalidate 失敗時，會記錄該篇的 slug 與失敗原因（不會被靜默吞掉），但不會讓發布本身失敗。
 - 帳號、slug、email 等 unique constraint 衝突一律回傳 `409`（附 `request_id` 方便對應 log），不會外洩 SQL 例外細節或變成未預期的 500。
+
+## 測試
+
+後端單元／整合測試（pytest，含 coverage 門檻 70%）：
+
+```bash
+docker compose exec backend pytest tests/ -v --cov=app --cov-report=term-missing
+```
+
+前端 E2E（Playwright）需要一個真的在跑的後端＋資料庫＋已建立好的管理者帳號。本機執行方式：
+
+```bash
+docker compose up -d
+docker compose exec backend alembic upgrade head
+docker compose exec -e ADMIN_USERNAME=e2e-admin -e ADMIN_EMAIL=e2e@example.invalid \
+  -e ADMIN_PASSWORD=<your_password> backend python -m app.cli create-admin
+
+cd frontend
+E2E_ADMIN_USERNAME=e2e-admin E2E_ADMIN_PASSWORD=<your_password> \
+NEXT_PUBLIC_API_URL=/api PLAYWRIGHT_BASE_URL=http://localhost \
+npx playwright test
+```
+
+CI 用的是完全獨立、一次性的 Postgres 與後端（見 `.github/workflows/ci.yml` 的 `e2e` job），不會碰到本機或正式環境的資料庫。E2E 涵蓋登入／建立草稿／發布／前台讀取，以及 AI 助理的鍵盤操作、來源引用、session 對話保存、速率限制與 provider 錯誤等情境；其中「看到答案與來源」這段用瀏覽器網路層攔截 `/api/ai/chat` 回傳固定回應，不會真的呼叫付費的 Gemini API——RAG 檢索與 citation 驗證邏輯已經在後端 integration test（mock provider）驗證過，E2E 這層只驗證前端收到成功回應後渲染是否正確。
 
 ## 依賴安全
 

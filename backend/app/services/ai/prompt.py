@@ -59,3 +59,11 @@ def extract_valid_sources(answer: str, chunks: list[RetrievedChunk]) -> list[Cha
             )
         )
     return sources
+
+
+def strip_citation_markers(answer: str) -> str:
+    """回答顯示給使用者前，把 [來源: xxx] 標記拿掉。citation 已經用獨立的
+    citation card 呈現一次，答案本文沒必要再重複內部 chunk id 格式，
+    那對一般使用者只是看不懂的雜訊。"""
+    without_markers = _CITATION_RE.sub("", answer)
+    return re.sub(r"[ \t]{2,}", " ", without_markers).strip()
