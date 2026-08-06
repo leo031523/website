@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import (
     about_content_router,
+    ai_chat_router,
     ai_settings_router,
     articles_router,
     auth_router,
@@ -75,6 +76,7 @@ app.include_router(tools_router)
 app.include_router(search_router)
 app.include_router(ai_settings_router)
 app.include_router(about_content_router)
+app.include_router(ai_chat_router)
 
 
 @app.get("/api/health")
