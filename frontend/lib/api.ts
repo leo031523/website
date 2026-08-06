@@ -1,4 +1,4 @@
-import type { AboutContent, Article, ArticlePayload, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
+import type { AboutContent, Article, ArticlePayload, ChatHistoryMessage, ChatResponse, ChatStatus, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
 
@@ -125,4 +125,10 @@ export const api = {
 
   updateAbout: (content_md: string) =>
     req<AboutContent>('/about', { method: 'PUT', body: JSON.stringify({ content_md }) }),
+
+  // ── AI 助理 ──────────────────────────────────────────
+  aiStatus: () => req<ChatStatus>('/ai/status'),
+
+  aiChat: (message: string, history: ChatHistoryMessage[], signal?: AbortSignal) =>
+    req<ChatResponse>('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal }),
 }

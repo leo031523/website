@@ -72,6 +72,30 @@ def test_chat_rejects_invalid_history_role(client):
     assert res.status_code == 422
 
 
+def test_status_reports_unavailable_when_no_provider_enabled(client):
+    res = client.get("/api/ai/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["available"] is False
+    assert data["provider"] is None
+
+
+def test_status_reports_available_provider_when_enabled(auth_client, cleanup, client):
+    _enable_gemini(auth_client, cleanup)
+    res = client.get("/api/ai/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["available"] is True
+    assert data["provider"] == "gemini"
+
+
+def test_status_never_leaks_api_key(auth_client, cleanup, client):
+    secret = "status-endpoint-secret-key-321"
+    _enable_gemini(auth_client, cleanup, api_key=secret)
+    res = client.get("/api/ai/status")
+    assert secret not in res.text
+
+
 def test_chat_returns_503_when_no_provider_enabled(client):
     reset_rate_limit(_TEST_CLIENT_KEY)
     try:

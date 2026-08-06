@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useRef, useState } from 'react'
 
-import { useFocusTrap } from './useFocusTrap'
+import { useFocusTrap } from '@/components/useFocusTrap'
 
 interface ConfirmOptions {
   title: string

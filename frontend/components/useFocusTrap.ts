@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 
 const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
 
 /**
  * 對話框通用的鍵盤行為：開啟時把焦點移進去、Tab/Shift+Tab 在對話框內循環、

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import AIAssistant from './AIAssistant'
 import ThemeToggle from './ThemeToggle'
 
 export default function Header() {
@@ -30,6 +31,7 @@ export default function Header() {
           >
             搜尋
           </Link>
+          <AIAssistant />
           <ThemeToggle />
         </div>
       </div>

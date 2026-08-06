@@ -55,3 +55,12 @@ class ChatResponse(BaseModel):
     # 有效引用時為 False（此時 answer 會是固定的「沒有足夠資訊」文字，
     # 而不是模型自己生成、卻沒有引用佐證的內容）。
     grounded: bool
+
+
+class ChatStatusResponse(BaseModel):
+    """公開端點用，只回答「AI 助理現在能不能用」與是哪家 provider
+    （前端要告知使用者輸入會送到哪個服務商），不含 model、timeout、
+    top_k 等其他設定細節。"""
+
+    available: bool
+    provider: str | None = None

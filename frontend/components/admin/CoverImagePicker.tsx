@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/components/admin/Toast'
-import { useFocusTrap } from '@/components/admin/useFocusTrap'
+import { useFocusTrap } from '@/components/useFocusTrap'
 import { api } from '@/lib/api'
 import type { MediaItem } from '@/lib/types'
 

@@ -105,6 +105,33 @@ export interface AboutContent {
   updated_at: string
 }
 
+export interface ChatHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatSource {
+  id: string
+  title: string
+  url: string
+  source_type: string
+  snippet: string
+}
+
+export interface ChatResponse {
+  answer: string
+  sources: ChatSource[]
+  provider: string
+  model: string
+  request_id: string
+  grounded: boolean
+}
+
+export interface ChatStatus {
+  available: boolean
+  provider: string | null
+}
+
 export interface PaginatedResponse<T> {
   items: T[]
   total: number

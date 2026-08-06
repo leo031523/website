@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.crypto import decrypt_secret
 from app.core.database import get_db
 from app.models.ai_settings import AIProviderSettings
-from app.schemas.ai_chat import ChatRequest, ChatResponse
+from app.schemas.ai_chat import ChatRequest, ChatResponse, ChatStatusResponse
 from app.services.ai.base import (
     ERROR_AUTH_FAILED,
     ERROR_RATE_LIMITED,
@@ -57,6 +57,21 @@ async def _enforce_body_size_limit(request: Request) -> None:
 
 def _error(status_code: int, message: str, request_id: str) -> JSONResponse:
     return JSONResponse(status_code=status_code, content={"detail": message, "request_id": request_id})
+
+
+@router.get("/status", response_model=ChatStatusResponse)
+async def status(db: AsyncSession = Depends(get_db)):
+    """公開端點：AI 助理目前能不能用、是哪家 provider。前端用這個
+    決定入口按鈕要不要顯示為可用狀態，不需要登入。"""
+    result = await db.execute(
+        select(AIProviderSettings).where(AIProviderSettings.is_enabled.is_(True))
+    )
+    settings_row = result.scalar_one_or_none()
+    available = bool(settings_row and settings_row.encrypted_api_key)
+    return ChatStatusResponse(
+        available=available,
+        provider=settings_row.provider if available and settings_row else None,
+    )
 
 
 @router.post("/chat", response_model=ChatResponse, dependencies=[Depends(_enforce_body_size_limit)])
