@@ -138,13 +138,18 @@ def test_enabling_one_provider_disables_others(auth_client, cleanup):
     assert enabled[0]["id"] == id2
 
 
-def test_enable_rejects_unsupported_provider(auth_client, cleanup):
-    """目前只有 Gemini 有實際 adapter；其餘 provider 可以先建立設定，
-    但不可被啟用，避免啟用後第一次真正呼叫聊天 API 才發現整個
-    adapter 不存在，讓使用者收到未處理的例外。"""
+def test_enable_rejects_unsupported_provider(auth_client, cleanup, monkeypatch):
+    """/enable 必須先確認 provider 有真的 adapter 實作，不能等到啟用後
+    第一次真正呼叫聊天 API 才發現整個 adapter 不存在、讓使用者收到未
+    處理的例外。用 monkeypatch 模擬「這個 provider 還沒有 adapter」的
+    情境來測 guard 本身的邏輯，不綁定在目前剛好哪家還沒做完。"""
+    import app.api.ai_settings as ai_settings_module
+
+    monkeypatch.setattr(ai_settings_module, "SUPPORTED_PROVIDERS", frozenset())
+
     res = auth_client.post(
         "/api/ai/settings",
-        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-1234"},
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "key-1234"},
     )
     settings_id = res.json()["id"]
     cleanup("ai_provider_settings", settings_id)
@@ -153,16 +158,31 @@ def test_enable_rejects_unsupported_provider(auth_client, cleanup):
     assert res.status_code == 400
 
 
-def test_test_connection_rejects_unsupported_provider(auth_client, cleanup):
+def test_test_connection_rejects_unsupported_provider(auth_client, cleanup, monkeypatch):
+    import app.api.ai_settings as ai_settings_module
+
+    monkeypatch.setattr(ai_settings_module, "SUPPORTED_PROVIDERS", frozenset())
+
     res = auth_client.post(
         "/api/ai/settings",
-        json={"provider": "claude", "model": "claude-3-haiku", "api_key": "key-1234"},
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "key-1234"},
     )
     settings_id = res.json()["id"]
     cleanup("ai_provider_settings", settings_id)
 
     res = auth_client.post(f"/api/ai/settings/{settings_id}/test")
     assert res.status_code == 400
+
+
+def test_all_declared_providers_have_adapters():
+    """四種 provider（Gemini／OpenAI／Claude／OpenAI-compatible）現在都
+    有實際的 adapter 實作了；這條測試釘住這個狀態，未來如果新增第五種
+    provider enum 卻忘記寫 adapter，這裡會先失敗提醒，而不是等使用者
+    在後台啟用後才發現。"""
+    from app.models.ai_settings import AIProvider
+    from app.services.ai.registry import SUPPORTED_PROVIDERS
+
+    assert SUPPORTED_PROVIDERS == frozenset(AIProvider)
 
 
 def test_delete_settings(auth_client, cleanup):

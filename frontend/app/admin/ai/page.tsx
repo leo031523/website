@@ -198,7 +198,8 @@ export default function AISettingsPage() {
     <AdminShell title="AI 助理設定">
       <p className="text-sm text-sumi-light mb-6 max-w-xl leading-relaxed">
         設定 AI 助理使用的模型服務商。同一時間只能啟用一個 provider，啟用新的會自動停用舊的。
-        目前只有 Google Gemini 已完成串接，其餘 provider 可以先建立設定，但暫時無法啟用或測試連線。
+        Gemini、OpenAI、Claude 都使用官方 endpoint，只有 OpenAI 相容服務可以自訂 Base
+        URL（例如本機的 Ollama）；正式環境預設拒絕 Base URL 指向內網或 loopback 位址。
       </p>
 
       <form onSubmit={handleCreate} className="border border-hairline rounded p-5 mb-8 bg-white max-w-xl">

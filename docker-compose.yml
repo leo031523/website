@@ -36,6 +36,7 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://frontend:3000}
       - COOKIE_SECURE=${COOKIE_SECURE:-false}
       - AI_MASTER_KEY=${AI_MASTER_KEY}
+      - AI_LOCAL_MODEL_ALLOWLIST=${AI_LOCAL_MODEL_ALLOWLIST:-}
     volumes:
       - media_data:/app/media
     depends_on:

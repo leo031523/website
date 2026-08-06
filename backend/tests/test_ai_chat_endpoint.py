@@ -49,26 +49,22 @@ def _keyword() -> str:
 
 
 def test_chat_returns_safe_error_when_enabled_provider_has_no_adapter(
-    auth_client, cleanup, client, db_conn
+    auth_client, cleanup, client, monkeypatch
 ):
-    """/api/ai/settings/{id}/enable 會擋掉沒有 adapter 的 provider，但這裡
-    直接繞過 API、用資料庫層級把一筆 provider=openai 的設定強制標成
-    is_enabled=true，確認即使出現這種不該發生的狀態，聊天 API 也只會
-    回傳安全的錯誤訊息，不會讓未處理的例外洩漏 stack trace。"""
+    """所有四種 provider 現在都有 adapter 了，正常情況下這個狀態不會發生，
+    但防禦性處理還是要驗證：用 monkeypatch 模擬 get_adapter() 找不到
+    adapter 的情境，確認聊天 API 回傳安全的錯誤訊息，不會讓未處理的
+    NotImplementedError 洩漏成一個奇怪的 500。"""
+    import app.api.ai_chat as ai_chat_module
+
     keyword = _keyword()
     _publish_article(auth_client, cleanup, keyword)
+    _enable_gemini(auth_client, cleanup)
 
-    res = auth_client.post(
-        "/api/ai/settings",
-        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-1234"},
-    )
-    settings_id = res.json()["id"]
-    cleanup("ai_provider_settings", settings_id)
+    def _raise_not_implemented(provider):
+        raise NotImplementedError(f"provider {provider} 尚未實作 adapter")
 
-    with db_conn, db_conn.cursor() as cur:
-        cur.execute(
-            "UPDATE ai_provider_settings SET is_enabled = true WHERE id = %s", (settings_id,)
-        )
+    monkeypatch.setattr(ai_chat_module, "get_adapter", _raise_not_implemented)
 
     reset_rate_limit(_TEST_CLIENT_KEY)
     try:

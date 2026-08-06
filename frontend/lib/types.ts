@@ -114,9 +114,8 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   openai_compatible: 'OpenAI 相容服務',
 }
 
-// 目前只有 Gemini 有實作 adapter；其餘 provider 可以先建立設定，
-// 但後端會拒絕啟用或測試連線，介面上需要提前告知使用者。
-export const AI_SUPPORTED_PROVIDERS: readonly AIProvider[] = ['gemini']
+// 四種 provider 都已經有後端 adapter 實作，全部可以啟用／測試連線。
+export const AI_SUPPORTED_PROVIDERS: readonly AIProvider[] = ['gemini', 'openai', 'claude', 'openai_compatible']
 
 export interface AIProviderSettings {
   id: number

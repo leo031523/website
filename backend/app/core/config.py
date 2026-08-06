@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # 用來加密 AI provider API key 的 master key；遺失即無法解密已存的 key，
     # 只能請管理者重新輸入一次。
     ai_master_key: str = _INSECURE_DEFAULT
+    # 正式環境預設拒絕 OpenAI-compatible provider 的 base_url 指向
+    # loopback／內網／metadata 位址（SSRF 防護）。若部署情境確實需要
+    # 連線到內網的自架模型，把主機名稱加進這個逗號分隔的白名單。
+    ai_local_model_allowlist: str = ""
 
     model_config = {"env_file": ".env"}
 

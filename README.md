@@ -90,6 +90,16 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 `AI_MASTER_KEY` 用來加密資料庫中 AI provider 的 API key（Fernet 對稱加密），遺失這把 key 等於遺失所有已存的 API key，只能請管理者到後台重新輸入一次，不影響其他功能。
 
+### AI 助理的 Local model 支援
+
+「Local model」指的是**後端容器**能透過網路存取的 OpenAI-compatible endpoint（例如同一台主機或同一個 Docker network 內跑的 Ollama、LM Studio），不是讓公開網站直接呼叫訪客自己電腦上的模型——那是完全不同、也不安全的架構。
+
+- Gemini、OpenAI、Claude 一律使用官方 endpoint，不開放自訂 host。
+- 只有「OpenAI 相容服務」可以在後台設定 Base URL。
+- 正式環境（`APP_ENV=production`）預設拒絕 Base URL 指向 loopback、link-local（含雲端 metadata IP）、內網位址，防止 SSRF。本機開發不受此限制。
+- 若正式部署真的需要連線到內網的自架模型，把主機名稱加進環境變數 `AI_LOCAL_MODEL_ALLOWLIST`（逗號分隔），而不是放寬成接受任意 URL。
+- 不要為了讓網站存取家用電腦上的模型，就把 Ollama／LM Studio 未經驗證地直接暴露到公開網路。
+
 ### 認證與 CSRF 防護
 
 登入後的 session 用 `HttpOnly` cookie 保存 JWT（正式環境另外帶 `Secure`），前端 JS 讀不到 token，可防 XSS 竊取。CSRF 防護採用 `SameSite=Lax` cookie（跨站的狀態變更請求不會帶上此 cookie）疊加嚴格的 CORS allow-list（跨站請求會先觸發 preflight，未在白名單內的來源會被瀏覽器擋下），因此未額外導入 CSRF token 機制。
