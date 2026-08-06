@@ -48,6 +48,37 @@ def _keyword() -> str:
     return f"測試主題{uuid.uuid4().hex[:8]}"
 
 
+def test_chat_returns_safe_error_when_enabled_provider_has_no_adapter(
+    auth_client, cleanup, client, db_conn
+):
+    """/api/ai/settings/{id}/enable 會擋掉沒有 adapter 的 provider，但這裡
+    直接繞過 API、用資料庫層級把一筆 provider=openai 的設定強制標成
+    is_enabled=true，確認即使出現這種不該發生的狀態，聊天 API 也只會
+    回傳安全的錯誤訊息，不會讓未處理的例外洩漏 stack trace。"""
+    keyword = _keyword()
+    _publish_article(auth_client, cleanup, keyword)
+
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-1234"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    with db_conn, db_conn.cursor() as cur:
+        cur.execute(
+            "UPDATE ai_provider_settings SET is_enabled = true WHERE id = %s", (settings_id,)
+        )
+
+    reset_rate_limit(_TEST_CLIENT_KEY)
+    try:
+        res = client.post("/api/ai/chat", json={"message": keyword})
+        assert res.status_code == 503
+        assert "request_id" in res.json()
+    finally:
+        reset_rate_limit(_TEST_CLIENT_KEY)
+
+
 def test_chat_rejects_empty_message(client):
     res = client.post("/api/ai/chat", json={"message": "   "})
     assert res.status_code == 422

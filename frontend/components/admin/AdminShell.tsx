@@ -67,6 +67,7 @@ function Sidebar() {
         <NavLink href="/admin/tools" label="工具清單" pathname={pathname} />
         <NavLink href="/admin/media" label="媒體庫" pathname={pathname} />
         <NavLink href="/admin/about" label="關於我" pathname={pathname} />
+        <NavLink href="/admin/ai" label="AI 助理設定" pathname={pathname} />
         <NavLink href="/admin/settings" label="帳號設定" pathname={pathname} />
       </nav>
       <button

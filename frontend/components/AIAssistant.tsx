@@ -11,16 +11,9 @@ import {
   saveConversation,
   type StoredChatMessage,
 } from '@/lib/aiChatStorage'
-import type { ChatHistoryMessage } from '@/lib/types'
+import { AI_PROVIDER_LABELS, type AIProvider, type ChatHistoryMessage } from '@/lib/types'
 
 type Status = 'loading' | 'available' | 'unavailable'
-
-const PROVIDER_LABELS: Record<string, string> = {
-  gemini: 'Google Gemini',
-  openai: 'OpenAI',
-  claude: 'Anthropic Claude',
-  openai_compatible: 'OpenAI 相容服務',
-}
 
 export default function AIAssistant() {
   const [status, setStatus] = useState<Status>('loading')
@@ -123,7 +116,7 @@ export default function AIAssistant() {
   }
 
   const buttonLabel = status === 'unavailable' ? 'AI 助理（尚未開放）' : 'AI 助理'
-  const providerLabel = provider ? (PROVIDER_LABELS[provider] ?? provider) : null
+  const providerLabel = provider ? (AI_PROVIDER_LABELS[provider as AIProvider] ?? provider) : null
 
   return (
     <>

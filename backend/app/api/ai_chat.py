@@ -113,7 +113,14 @@ async def chat(
     adapter_messages.append(ChatMessage(role="user", content=body.message))
 
     api_key = decrypt_secret(settings_row.encrypted_api_key)
-    adapter = get_adapter(settings_row.provider)
+    try:
+        adapter = get_adapter(settings_row.provider)
+    except NotImplementedError:
+        logger.error(
+            "ai chat: enabled provider has no adapter implementation",
+            extra={"request_id": request_id, "provider": settings_row.provider},
+        )
+        return _error(503, "AI 服務目前設定有誤，請聯絡網站管理者", request_id)
 
     start = time.monotonic()
     try:

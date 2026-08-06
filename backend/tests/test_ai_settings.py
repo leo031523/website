@@ -37,6 +37,24 @@ def test_non_compatible_provider_rejects_base_url(auth_client):
     assert res.status_code == 422
 
 
+def test_list_settings_shows_masked_suffix_of_currently_stored_key(auth_client, cleanup):
+    """遮罩尾碼不是只有建立當下才看得到——管理者事後重新整理頁面、
+    再次讀取設定列表時，也要能看到目前生效的是哪把 key（遮罩後），
+    而不是永遠顯示 null，逼管理者只能靠記憶或重新輸入才能確認。"""
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret-xyz-7890"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.get("/api/ai/settings")
+    assert res.status_code == 200
+    row = next(s for s in res.json() if s["id"] == settings_id)
+    assert row["api_key_suffix"] == "****7890"
+    assert "secret-xyz-7890" not in res.text
+
+
 def test_list_settings_never_leaks_encrypted_key_field(auth_client, cleanup):
     res = auth_client.post(
         "/api/ai/settings",
@@ -101,7 +119,7 @@ def test_enabling_one_provider_disables_others(auth_client, cleanup):
 
     res2 = auth_client.post(
         "/api/ai/settings",
-        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-two-5678"},
+        json={"provider": "gemini", "model": "gemini-1.5-flash", "api_key": "key-two-5678"},
     )
     id2 = res2.json()["id"]
     cleanup("ai_provider_settings", id2)
@@ -118,6 +136,33 @@ def test_enabling_one_provider_disables_others(auth_client, cleanup):
     enabled = [s for s in res.json() if s["is_enabled"]]
     assert len(enabled) == 1
     assert enabled[0]["id"] == id2
+
+
+def test_enable_rejects_unsupported_provider(auth_client, cleanup):
+    """目前只有 Gemini 有實際 adapter；其餘 provider 可以先建立設定，
+    但不可被啟用，避免啟用後第一次真正呼叫聊天 API 才發現整個
+    adapter 不存在，讓使用者收到未處理的例外。"""
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "openai", "model": "gpt-4o-mini", "api_key": "key-1234"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.post(f"/api/ai/settings/{settings_id}/enable")
+    assert res.status_code == 400
+
+
+def test_test_connection_rejects_unsupported_provider(auth_client, cleanup):
+    res = auth_client.post(
+        "/api/ai/settings",
+        json={"provider": "claude", "model": "claude-3-haiku", "api_key": "key-1234"},
+    )
+    settings_id = res.json()["id"]
+    cleanup("ai_provider_settings", settings_id)
+
+    res = auth_client.post(f"/api/ai/settings/{settings_id}/test")
+    assert res.status_code == 400
 
 
 def test_delete_settings(auth_client, cleanup):

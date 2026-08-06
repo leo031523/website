@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import decrypt_secret, encrypt_secret, mask_secret
+from app.core.crypto import DecryptionError, decrypt_secret, encrypt_secret, mask_secret
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.ai_settings import AIProvider, AIProviderSettings
@@ -17,7 +17,7 @@ from app.schemas.ai_settings import (
     AITestConnectionResponse,
 )
 from app.services.ai.base import ChatMessage, ProviderError
-from app.services.ai.registry import get_adapter
+from app.services.ai.registry import SUPPORTED_PROVIDERS, get_adapter
 
 router = APIRouter(prefix="/api/ai/settings", tags=["ai-settings"])
 logger = logging.getLogger("app.ai")
@@ -33,6 +33,18 @@ _TEST_MESSAGE = "ping"
 _last_test_at: dict[int, float] = {}
 
 
+def _mask_current_key(s: AIProviderSettings) -> str | None:
+    """讀取設定時也回傳遮罩後的尾碼（例如 ****ab12），不是只有建立／更新
+    當下才看得到——管理者事後回來查看時，才能確認目前生效的是哪把 key。
+    解密只是為了算出遮罩尾碼，這個函式本身絕不回傳完整明文。"""
+    if not s.encrypted_api_key:
+        return None
+    try:
+        return mask_secret(decrypt_secret(s.encrypted_api_key))
+    except DecryptionError:
+        return None
+
+
 def _to_response(s: AIProviderSettings) -> AIProviderSettingsResponse:
     return AIProviderSettingsResponse(
         id=s.id,
@@ -40,7 +52,7 @@ def _to_response(s: AIProviderSettings) -> AIProviderSettingsResponse:
         model=s.model,
         base_url=s.base_url,
         is_configured=s.encrypted_api_key is not None,
-        api_key_suffix=None,  # 遮罩尾碼只在建立/更新當下短暫可得，見下方 _mask_cache
+        api_key_suffix=_mask_current_key(s),
         is_enabled=s.is_enabled,
         timeout_seconds=s.timeout_seconds,
         max_output_tokens=s.max_output_tokens,
@@ -77,11 +89,7 @@ async def create_ai_settings(
     db.add(settings_row)
     await db.commit()
     await db.refresh(settings_row)
-
-    response = _to_response(settings_row)
-    if body.api_key:
-        response.api_key_suffix = mask_secret(body.api_key)
-    return response
+    return _to_response(settings_row)
 
 
 @router.put("/{settings_id}", response_model=AIProviderSettingsResponse)
@@ -109,19 +117,14 @@ async def update_ai_settings(
     if body.top_k is not None:
         settings_row.top_k = body.top_k
 
-    new_key_suffix: str | None = None
     if body.remove_api_key:
         settings_row.encrypted_api_key = None
     elif body.api_key:
         settings_row.encrypted_api_key = encrypt_secret(body.api_key)
-        new_key_suffix = mask_secret(body.api_key)
 
     await db.commit()
     await db.refresh(settings_row)
-
-    response = _to_response(settings_row)
-    response.api_key_suffix = new_key_suffix
-    return response
+    return _to_response(settings_row)
 
 
 @router.delete("/{settings_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -153,6 +156,8 @@ async def enable_ai_settings(
     if not settings_row:
         raise HTTPException(status_code=404, detail="找不到 AI provider 設定")
 
+    if settings_row.provider not in SUPPORTED_PROVIDERS:
+        raise HTTPException(status_code=400, detail="此 provider 尚未支援，暫時只能啟用 Gemini")
     if not settings_row.encrypted_api_key:
         raise HTTPException(status_code=400, detail="尚未設定 API key，無法啟用")
     if not settings_row.model.strip():
@@ -205,6 +210,8 @@ async def test_ai_connection(
         raise HTTPException(status_code=404, detail="找不到 AI provider 設定")
     if not settings_row.encrypted_api_key:
         raise HTTPException(status_code=400, detail="尚未設定 API key")
+    if settings_row.provider not in SUPPORTED_PROVIDERS:
+        raise HTTPException(status_code=400, detail="此 provider 尚未支援，暫時只能測試 Gemini")
 
     now = time.monotonic()
     last = _last_test_at.get(settings_id)

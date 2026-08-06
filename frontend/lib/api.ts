@@ -1,4 +1,4 @@
-import type { AboutContent, Article, ArticlePayload, ChatHistoryMessage, ChatResponse, ChatStatus, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
+import type { AboutContent, AIProviderSettings, AIProviderSettingsPayload, AIProviderSettingsUpdatePayload, AITestConnectionResult, Article, ArticlePayload, ChatHistoryMessage, ChatResponse, ChatStatus, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
 
@@ -131,4 +131,21 @@ export const api = {
 
   aiChat: (message: string, history: ChatHistoryMessage[], signal?: AbortSignal) =>
     req<ChatResponse>('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal }),
+
+  // ── AI 設定（後台）───────────────────────────────────
+  listAISettings: () => req<AIProviderSettings[]>('/ai/settings'),
+
+  createAISettings: (data: AIProviderSettingsPayload) =>
+    req<AIProviderSettings>('/ai/settings', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateAISettings: (id: number, data: AIProviderSettingsUpdatePayload) =>
+    req<AIProviderSettings>(`/ai/settings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteAISettings: (id: number) => req<void>(`/ai/settings/${id}`, { method: 'DELETE' }),
+
+  enableAISettings: (id: number) => req<AIProviderSettings>(`/ai/settings/${id}/enable`, { method: 'POST' }),
+
+  disableAISettings: (id: number) => req<AIProviderSettings>(`/ai/settings/${id}/disable`, { method: 'POST' }),
+
+  testAISettings: (id: number) => req<AITestConnectionResult>(`/ai/settings/${id}/test`, { method: 'POST' }),
 }

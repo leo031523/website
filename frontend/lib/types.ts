@@ -105,6 +105,62 @@ export interface AboutContent {
   updated_at: string
 }
 
+export type AIProvider = 'gemini' | 'openai' | 'claude' | 'openai_compatible'
+
+export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
+  gemini: 'Google Gemini',
+  openai: 'OpenAI',
+  claude: 'Anthropic Claude',
+  openai_compatible: 'OpenAI 相容服務',
+}
+
+// 目前只有 Gemini 有實作 adapter；其餘 provider 可以先建立設定，
+// 但後端會拒絕啟用或測試連線，介面上需要提前告知使用者。
+export const AI_SUPPORTED_PROVIDERS: readonly AIProvider[] = ['gemini']
+
+export interface AIProviderSettings {
+  id: number
+  provider: AIProvider
+  model: string
+  base_url: string | null
+  is_configured: boolean
+  api_key_suffix: string | null
+  is_enabled: boolean
+  timeout_seconds: number
+  max_output_tokens: number
+  top_k: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AIProviderSettingsPayload {
+  provider: AIProvider
+  model: string
+  base_url?: string | null
+  api_key?: string | null
+  timeout_seconds?: number
+  max_output_tokens?: number
+  top_k?: number
+}
+
+export interface AIProviderSettingsUpdatePayload {
+  model?: string
+  base_url?: string | null
+  api_key?: string | null
+  remove_api_key?: boolean
+  timeout_seconds?: number
+  max_output_tokens?: number
+  top_k?: number
+}
+
+export interface AITestConnectionResult {
+  provider: AIProvider
+  model: string
+  success: boolean
+  latency_ms: number | null
+  error_category: string | null
+}
+
 export interface ChatHistoryMessage {
   role: 'user' | 'assistant'
   content: string
