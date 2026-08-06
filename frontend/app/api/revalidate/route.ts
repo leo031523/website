@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
     revalidatePath('/')
     revalidatePath('/projects')
     if (slug) revalidatePath(`/projects/${slug}`)
+  } else if (type === 'about') {
+    revalidateTag('about')
+    revalidatePath('/about')
   } else {
     revalidateTag('articles')
     revalidateTag(`article-${slug}`)

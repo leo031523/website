@@ -1,4 +1,4 @@
-import type { Article, Category, PaginatedResponse, Project, Tag } from './types'
+import type { AboutContent, Article, Category, PaginatedResponse, Project, Tag } from './types'
 
 const BASE = process.env.API_URL ?? 'http://backend:8000'
 
@@ -92,6 +92,18 @@ export async function getProject(slug: string): Promise<Project | null> {
   try {
     const res = await fetch(`${BASE}/api/projects/${slug}`, {
       next: { tags: ['projects', `project-${slug}`] },
+    })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function getAbout(): Promise<AboutContent | null> {
+  try {
+    const res = await fetch(`${BASE}/api/about`, {
+      next: { tags: ['about'] },
     })
     if (!res.ok) return null
     return res.json()

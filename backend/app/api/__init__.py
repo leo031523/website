@@ -1,3 +1,4 @@
+from .about_content import router as about_content_router
 from .ai_settings import router as ai_settings_router
 from .articles import router as articles_router
 from .auth import router as auth_router
@@ -18,4 +19,5 @@ __all__ = [
     "tools_router",
     "search_router",
     "ai_settings_router",
+    "about_content_router",
 ]

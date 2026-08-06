@@ -1,4 +1,4 @@
-import type { Article, ArticlePayload, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
+import type { AboutContent, Article, ArticlePayload, Category, MediaItem, PaginatedResponse, Project, ProjectPayload, Tag, Tool, User } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
 
@@ -119,4 +119,10 @@ export const api = {
     req<Tool>(`/tools/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   deleteTool: (id: number) => req<void>(`/tools/${id}`, { method: 'DELETE' }),
+
+  // ── About ────────────────────────────────────────────
+  getAbout: () => req<AboutContent>('/about'),
+
+  updateAbout: (content_md: string) =>
+    req<AboutContent>('/about', { method: 'PUT', body: JSON.stringify({ content_md }) }),
 }

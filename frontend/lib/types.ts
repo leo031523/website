@@ -100,6 +100,11 @@ export interface ProjectPayload {
   cover_image_id?: number | null
 }
 
+export interface AboutContent {
+  content_md: string
+  updated_at: string
+}
+
 export interface PaginatedResponse<T> {
   items: T[]
   total: number

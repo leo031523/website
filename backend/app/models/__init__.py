@@ -1,3 +1,4 @@
+from .about_content import AboutContent
 from .ai_settings import AIProvider, AIProviderSettings
 from .article import Article, ArticleStatus
 from .base import Base
@@ -24,4 +25,5 @@ __all__ = [
     "project_tools",
     "AIProvider",
     "AIProviderSettings",
+    "AboutContent",
 ]
