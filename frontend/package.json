@@ -10,7 +10,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "next": "15.5.22",
+    "next": "16.2.12",
     "react": "^19",
     "react-dom": "^19",
     "react-markdown": "^9.0.1",
