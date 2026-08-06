@@ -1,4 +1,5 @@
 ![CI](https://github.com/leo031523/website/actions/workflows/ci.yml/badge.svg)
+![Backend Coverage](https://img.shields.io/badge/backend%20coverage-77%25-brightgreen)
 
 # Portfolio & Blog
 
@@ -23,6 +24,18 @@
 - 全文搜尋、標籤 / 分類頁、RSS 訂閱、深色模式
 - SEO：sitemap、Open Graph、JSON-LD 結構化資料
 - AI 助理：以網站已發布文章／關於我頁面為依據回答問題（keyword retrieval + citation 驗證，非向量搜尋），只回答有真實來源支撐的內容，找不到依據時明確拒答；後台可設定 provider（目前完成 Google Gemini）與 API key（加密儲存）
+
+## 畫面
+
+| | |
+| --- | --- |
+| ![首頁](./docs/screenshots/home.png) 首頁 | ![深色模式](./docs/screenshots/home-dark.png) 深色模式 |
+| ![文章列表](./docs/screenshots/blog-list.png) 文章列表（分類篩選） | ![文章內容](./docs/screenshots/blog-detail.png) 文章內容 |
+| ![作品集](./docs/screenshots/projects.png) 作品集 | ![後台 Markdown 編輯器](./docs/screenshots/admin-editor.png) 後台 Markdown 編輯器 |
+| ![後台文章管理](./docs/screenshots/admin-articles.png) 後台文章管理 | ![後台 AI 助理設定](./docs/screenshots/admin-ai-settings.png) 後台 AI 助理設定 |
+| ![AI 助理錯誤處理](./docs/screenshots/ai-drawer-error.png) AI 助理：provider 失敗時的安全錯誤訊息 | ![AI 助理入口](./docs/screenshots/ai-drawer-empty.png) AI 助理對話視窗 |
+
+> AI 助理的錯誤處理截圖是真實情境：後台設定了一把 provider 拒絕的 API key，前台問了一個真的會命中「關於我」內容的問題，後端真的呼叫 Gemini、真的失敗，前端正確顯示安全訊息與重試按鈕，不是刻意擺拍的假畫面。
 
 ## 本機開發
 
@@ -71,6 +84,124 @@ flowchart LR
     Nginx --> Backend["FastAPI"]
     Backend --> DB["PostgreSQL 16"]
     Backend -->|revalidate| Frontend
+    Backend -->|"僅 AI 助理功能"| Provider["AI Provider<br/>(Gemini / OpenAI / Claude /<br/>OpenAI-compatible)"]
+```
+
+### 資料模型（ER 圖）
+
+```mermaid
+erDiagram
+    USERS ||--o{ ARTICLES : "撰寫"
+    CATEGORIES ||--o{ ARTICLES : "分類"
+    ARTICLES }o--o{ TAGS : "標記"
+    PROJECTS }o--o{ TAGS : "標記"
+    PROJECTS }o--o{ TOOLS : "使用"
+    MEDIA |o--o{ ARTICLES : "封面"
+    MEDIA |o--o{ PROJECTS : "封面"
+
+    USERS {
+        int id PK
+        string username
+        string email
+        string hashed_password
+        int token_version "密碼變更時遞增，讓舊 JWT 失效"
+        datetime created_at
+    }
+    ARTICLES {
+        int id PK
+        string title
+        string slug UK
+        text content_md
+        enum status "draft | published"
+        datetime published_at
+        int author_id FK
+        int category_id FK
+        int cover_image_id FK
+    }
+    PROJECTS {
+        int id PK
+        string title
+        string slug UK
+        text content_md
+        json tech_stack
+        string repo_url
+        string demo_url
+        enum status "draft | published"
+        bool featured
+        int cover_image_id FK
+    }
+    CATEGORIES {
+        int id PK
+        string name
+        string slug UK
+    }
+    TAGS {
+        int id PK
+        string name
+        string slug UK
+    }
+    TOOLS {
+        int id PK
+        string name
+        string category
+        string url
+    }
+    MEDIA {
+        int id PK
+        string filename
+        string mime_type
+        int size
+    }
+    ABOUT_CONTENT {
+        int id PK "singleton，固定為 1"
+        text content_md
+    }
+    AI_PROVIDER_SETTINGS {
+        int id PK
+        enum provider "gemini | openai | claude | openai_compatible"
+        string model
+        string base_url "只有 openai_compatible 可用"
+        text encrypted_api_key "Fernet 加密，絕不明文"
+        bool is_enabled "同時最多一筆為 true"
+        int timeout_seconds
+        int max_output_tokens
+        int top_k
+    }
+```
+
+`ABOUT_CONTENT` 與 `AI_PROVIDER_SETTINGS` 沒有跟其他實體建立外鍵關聯——前者是單列（id 固定為 1）取代原本寫死在前端頁面的「關於我」文字，後者是 AI 助理的 provider 設定，兩者都是 AI 助理功能新增的資料表。
+
+### AI 助理請求流程
+
+```mermaid
+sequenceDiagram
+    participant U as 使用者瀏覽器
+    participant API as FastAPI /api/ai/chat
+    participant RL as Rate Limiter
+    participant DB as PostgreSQL
+    participant R as 檢索（keyword + chunk）
+    participant P as AI Provider
+
+    U->>API: POST /api/ai/chat {message, history}
+    API->>RL: 檢查 IP 是否超過每分鐘/每日上限
+    RL-->>API: 超過 → 429，未超過 → 繼續
+    API->>DB: 查詢目前啟用的 provider 設定
+    DB-->>API: provider / model / 加密 API key
+    API->>R: 用 message 檢索已發布文章 + 關於我
+    R-->>API: 相關度通過門檻的 chunks（可能為 0）
+    alt 沒有 chunk 通過門檻
+        API-->>U: 固定拒答文案，不呼叫 provider
+    else 有相關 chunk
+        API->>API: 組 system prompt（chunk 內容標記為不可信資料）
+        API->>P: 呼叫 provider（timeout + 有限重試）
+        P-->>API: 回答文字（可能含 [來源: xxx] 標記）
+        API->>API: 只保留真的存在於 chunks 裡的來源 ID<br/>其餘引用視為幻覺、直接捨棄
+        alt 沒有任何有效引用
+            API-->>U: 降級為固定拒答文案
+        else 至少一個有效引用
+            API-->>U: 回答 + citation cards + request_id
+        end
+    end
 ```
 
 ## 部署
@@ -116,7 +247,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ## 測試
 
-後端單元／整合測試（pytest，含 coverage 門檻 70%）：
+後端單元／整合測試（pytest，含 coverage 門檻 70%；上方 coverage badge 是最近一次執行的實際數字，非自動更新，改動測試涵蓋率時會手動同步）：
 
 ```bash
 docker compose exec backend pytest tests/ -v --cov=app --cov-report=term-missing
@@ -142,6 +273,19 @@ CI 用的是完全獨立、一次性的 Postgres 與後端（見 `.github/workfl
 
 CI 會執行 `npm audit`（擋 critical 漏洞）與後端 `ruff check`；Dependabot 每週自動檢查 npm、pip、Docker base image 與 GitHub Actions 的更新。目前已知且暫時無法在不做 Next.js 大版本升級下解決的殘留風險，記錄在 [`SECURITY_NOTES.md`](./SECURITY_NOTES.md)。
 
+## 技術決策
+
+幾個不是憑直覺、而是有明確取捨考量的決定（JWT 為什麼用 cookie 不用 localStorage、CSRF 為什麼沒有另外做 token、SSRF 怎麼防、AI 為什麼先用關鍵字檢索不用向量搜尋⋯），整理成「決定了什麼 → 為什麼 → 主要代價」的格式，記錄在 [`docs/DECISIONS.md`](./docs/DECISIONS.md)。
+
+## AI 協作範圍與人工驗證方式
+
+這個專案的程式碼是與 AI 協作完成的，這裡誠實說明協作的範圍與怎麼驗證品質，而不是含糊帶過：
+
+- **AI 負責的部分**：大部分程式碼的初稿（後端 API、adapter、前端元件、測試案例）由 AI 撰寫，我負責提出需求、審查設計、驗收行為是否符合預期。
+- **每個功能收工前，實際跑過，不是「看起來會動」就算數**：後端每個功能都有對應的 pytest（目前 180+ 個），關鍵安全修復（例如 API key 曾經意外寫進 log、focus trap 選到 disabled 元素）都用「先還原修復、確認測試真的會失敗、再改回來」的方式驗證測試本身有效，不是寫了測試卻沒有真的驗證它抓得到問題。前端功能除了 `tsc`/lint/production build 之外，會用瀏覽器（含無障礙操作、鍵盤導覽）實際跑過一次；牽涉到後台操作的流程會建立一次性測試帳號、實際登入操作、驗證完再把測試資料清除乾淨。
+- **CI 全綠只是下限，不是唯一驗收標準**：每次改動在推上 GitHub 之前，會先在本機用跟 CI 等價的環境（獨立 Postgres、獨立後端、Playwright）完整跑過一次，抓到問題就地修掉，確認沒問題才推送；推送後也會實際查看 GitHub Actions 的執行結果，而不是假設「應該會過」。
+- **對 AI 生成內容保持懷疑，尤其是「聽起來合理」的部分**：這份 README 裡列出的每一項安全機制、每一個數字（例如 coverage 百分比、測試數量），都是從實際執行結果讀出來的，不是憑印象寫的。AI 助理本身的 citation 驗證機制（見上方「AI 助理請求流程」）也是同一種精神的體現：不相信模型自己聲稱的東西，只相信可以獨立驗證的結果。
+
 ## 里程碑
 
 - ✅ M0 專案骨架
@@ -151,3 +295,4 @@ CI 會執行 `npm audit`（擋 critical 漏洞）與後端 `ruff check`；Depend
 - ✅ M4 部署（HTTPS + 自動備份）
 - ✅ M5 作品集 v2
 - ✅ M6 搜尋 / 標籤 / RSS / 深色模式
+- ✅ M7 AI 助理（RAG 問答、多 provider adapter、E2E 測試）
