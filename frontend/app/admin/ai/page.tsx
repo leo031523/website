@@ -14,8 +14,11 @@ import {
 
 const PROVIDERS: AIProvider[] = ['gemini', 'openai', 'claude', 'openai_compatible']
 
+// 只是表單預填的建議值，欄位本身可自由編輯——各家 provider 的可用
+// model 名稱變動很快（例如 Gemini 免費方案已知會不定期調整哪些
+// model 開放），這裡不保證永遠是當下最新、最適合的選擇。
 const DEFAULT_MODEL: Record<AIProvider, string> = {
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-3.6-flash',
   openai: 'gpt-4o-mini',
   claude: 'claude-3-5-haiku-20241022',
   openai_compatible: '',

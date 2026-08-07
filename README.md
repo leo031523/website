@@ -33,9 +33,9 @@
 | ![文章列表](./docs/screenshots/blog-list.png) 文章列表（分類篩選） | ![文章內容](./docs/screenshots/blog-detail.png) 文章內容 |
 | ![作品集](./docs/screenshots/projects.png) 作品集 | ![後台 Markdown 編輯器](./docs/screenshots/admin-editor.png) 後台 Markdown 編輯器 |
 | ![後台文章管理](./docs/screenshots/admin-articles.png) 後台文章管理 | ![後台 AI 助理設定](./docs/screenshots/admin-ai-settings.png) 後台 AI 助理設定 |
-| ![AI 助理錯誤處理](./docs/screenshots/ai-drawer-error.png) AI 助理：provider 失敗時的安全錯誤訊息 | ![AI 助理入口](./docs/screenshots/ai-drawer-empty.png) AI 助理對話視窗 |
+| ![AI 助理回答成功](./docs/screenshots/ai-drawer-success.png) AI 助理：真實回答與來源引用卡片 | ![AI 助理錯誤處理](./docs/screenshots/ai-drawer-error.png) AI 助理：provider 失敗時的安全錯誤訊息 |
 
-> AI 助理的錯誤處理截圖是真實情境：後台設定了一把 provider 拒絕的 API key，前台問了一個真的會命中「關於我」內容的問題，後端真的呼叫 Gemini、真的失敗，前端正確顯示安全訊息與重試按鈕，不是刻意擺拍的假畫面。
+> 兩張 AI 助理截圖都是真實情境，不是擺拍的假畫面：左邊是真的呼叫 Gemini API 拿到的回答，來源引用卡片對應「關於我」的實際內容，點下去會連到真正的頁面；右邊是刻意設一把會被 provider 拒絕的 API key 測出來的錯誤處理畫面，前端正確顯示安全訊息與重試按鈕，不會讓使用者看到系統內部錯誤。
 
 ## 本機開發
 
