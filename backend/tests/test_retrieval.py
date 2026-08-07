@@ -33,6 +33,48 @@ async def test_retrieve_finds_published_article(auth_client, cleanup, db_session
 
 
 @pytest.mark.asyncio
+async def test_retrieve_finds_published_project(auth_client, cleanup, db_session):
+    keyword = _unique_keyword()
+    res = auth_client.post(
+        "/api/projects",
+        json={
+            "title": "檢索測試作品",
+            "content_md": f"這個作品的介紹包含 {keyword}，用來測試檢索功能是否正常運作。",
+            "status": "published",
+        },
+    )
+    assert res.status_code == 201
+    project = res.json()
+    cleanup("projects", project["id"])
+
+    results = await retrieve(db_session, keyword, top_k=5)
+    assert len(results) == 1
+    assert results[0].source_type == "project"
+    assert results[0].title == "檢索測試作品"
+    assert results[0].url == f"/projects/{project['slug']}"
+    assert results[0].id == f"project:{project['id']}#chunk-0"
+    assert keyword in results[0].snippet
+
+
+@pytest.mark.asyncio
+async def test_retrieve_excludes_draft_projects(auth_client, cleanup, db_session):
+    keyword = _unique_keyword()
+    res = auth_client.post(
+        "/api/projects",
+        json={
+            "title": "草稿作品不應該被檢索到",
+            "content_md": f"這個草稿作品包含 {keyword}。",
+            "status": "draft",
+        },
+    )
+    assert res.status_code == 201
+    cleanup("projects", res.json()["id"])
+
+    results = await retrieve(db_session, keyword, top_k=5)
+    assert results == []
+
+
+@pytest.mark.asyncio
 async def test_retrieve_excludes_draft_articles(auth_client, cleanup, db_session):
     keyword = _unique_keyword()
     res = auth_client.post(

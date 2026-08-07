@@ -44,8 +44,27 @@ def _publish_article(auth_client, cleanup, keyword: str, content_suffix: str = "
     return article
 
 
+def _publish_project(auth_client, cleanup, keyword: str):
+    res = auth_client.post(
+        "/api/projects",
+        json={
+            "title": f"聊天測試作品 {keyword}",
+            "content_md": f"這個作品介紹 {keyword} 相關的技術細節。",
+            "status": "published",
+        },
+    )
+    assert res.status_code == 201
+    project = res.json()
+    cleanup("projects", project["id"])
+    return project
+
+
 def _keyword() -> str:
-    return f"測試主題{uuid.uuid4().hex[:8]}"
+    # 故意不用「測試」這種常見詞當前綴——本機開發資料庫裡真的有提到
+    # 「測試」的正式內容（例如關於這個專案本身的文章／作品），用太
+    # 常見的字當關鍵字前綴，本機重複執行測試時容易跟真實內容意外
+    # 命中，CI 用的是全新空資料庫才不會有這個問題。
+    return f"貓咪打字員{uuid.uuid4().hex[:8]}"
 
 
 def test_chat_returns_safe_error_when_enabled_provider_has_no_adapter(
@@ -177,6 +196,30 @@ def test_chat_returns_grounded_answer_with_valid_citation(auth_client, cleanup, 
 
 
 @respx.mock
+def test_chat_returns_grounded_answer_citing_a_project(auth_client, cleanup, client):
+    keyword = _keyword()
+    project = _publish_project(auth_client, cleanup, keyword)
+    _enable_gemini(auth_client, cleanup)
+    reset_rate_limit(_TEST_CLIENT_KEY)
+    try:
+        chunk_id = f"project:{project['id']}#chunk-0"
+        respx.post(_GEMINI_URL).mock(
+            return_value=_gemini_success(f"這是關於{keyword}的說明 [來源: {chunk_id}]。")
+        )
+
+        res = client.post("/api/ai/chat", json={"message": keyword})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["grounded"] is True
+        assert len(data["sources"]) == 1
+        assert data["sources"][0]["id"] == chunk_id
+        assert data["sources"][0]["source_type"] == "project"
+        assert data["sources"][0]["url"] == f"/projects/{project['slug']}"
+    finally:
+        reset_rate_limit(_TEST_CLIENT_KEY)
+
+
+@respx.mock
 def test_chat_downgrades_to_fallback_when_model_hallucinates_source(auth_client, cleanup, client):
     """模型引用了不存在的 source id（幻覺），後端必須降級成明確拒答，
     不能把沒有真實依據的回答原封不動回給使用者。"""
@@ -212,6 +255,30 @@ def test_chat_never_returns_draft_article_content(auth_client, cleanup, client):
     )
     assert res.status_code == 201
     cleanup("articles", res.json()["id"])
+    _enable_gemini(auth_client, cleanup)
+    reset_rate_limit(_TEST_CLIENT_KEY)
+    try:
+        res = client.post("/api/ai/chat", json={"message": keyword})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["grounded"] is False
+        assert "機密草稿" not in data["answer"]
+    finally:
+        reset_rate_limit(_TEST_CLIENT_KEY)
+
+
+def test_chat_never_returns_draft_project_content(auth_client, cleanup, client):
+    keyword = _keyword()
+    res = auth_client.post(
+        "/api/projects",
+        json={
+            "title": "草稿作品不該被聊天功能看到",
+            "content_md": f"這是關於 {keyword} 的機密草稿內容。",
+            "status": "draft",
+        },
+    )
+    assert res.status_code == 201
+    cleanup("projects", res.json()["id"])
     _enable_gemini(auth_client, cleanup)
     reset_rate_limit(_TEST_CLIENT_KEY)
     try:

@@ -23,7 +23,7 @@
 - JWT 帳密登入（單一管理者，無公開註冊）
 - 全文搜尋、標籤 / 分類頁、RSS 訂閱、深色模式
 - SEO：sitemap、Open Graph、JSON-LD 結構化資料
-- AI 助理：以網站已發布文章／關於我頁面為依據回答問題（keyword retrieval + citation 驗證，非向量搜尋），只回答有真實來源支撐的內容，找不到依據時明確拒答；後台可設定 provider（Gemini、OpenAI、Claude、OpenAI 相容服務皆已完成）與 API key（加密儲存）
+- AI 助理：以網站已發布文章／作品／關於我頁面為依據回答問題（keyword retrieval + citation 驗證，非向量搜尋），只回答有真實來源支撐的內容，找不到依據時明確拒答；後台可設定 provider（Gemini、OpenAI、Claude、OpenAI 相容服務皆已完成）與 API key（加密儲存）
 
 ## 畫面
 
@@ -35,7 +35,7 @@
 | ![後台文章管理](./docs/screenshots/admin-articles.png) 後台文章管理 | ![後台 AI 助理設定](./docs/screenshots/admin-ai-settings.png) 後台 AI 助理設定 |
 | ![AI 助理回答成功](./docs/screenshots/ai-drawer-success.png) AI 助理：真實回答與來源引用卡片 | ![AI 助理錯誤處理](./docs/screenshots/ai-drawer-error.png) AI 助理：provider 失敗時的安全錯誤訊息 |
 
-> 兩張 AI 助理截圖都是真實情境，不是擺拍的假畫面：左邊是真的呼叫 Gemini API 拿到的回答，來源引用卡片對應「關於我」的實際內容，點下去會連到真正的頁面；右邊是刻意設一把會被 provider 拒絕的 API key 測出來的錯誤處理畫面，前端正確顯示安全訊息與重試按鈕，不會讓使用者看到系統內部錯誤。
+> 兩張 AI 助理截圖都是真實情境，不是擺拍的假畫面：左邊是真的呼叫 Gemini API 拿到的回答，同時引用了「關於我」與一則「作品」的實際內容（兩種來源類型都正確標示、都能點擊連到對應頁面）；右邊是刻意設一把會被 provider 拒絕的 API key 測出來的錯誤處理畫面，前端正確顯示安全訊息與重試按鈕，不會讓使用者看到系統內部錯誤。
 
 ## 本機開發
 
@@ -187,7 +187,7 @@ sequenceDiagram
     RL-->>API: 超過 → 429，未超過 → 繼續
     API->>DB: 查詢目前啟用的 provider 設定
     DB-->>API: provider / model / 加密 API key
-    API->>R: 用 message 檢索已發布文章 + 關於我
+    API->>R: 用 message 檢索已發布文章 + 已發布作品 + 關於我
     R-->>API: 相關度通過門檻的 chunks（可能為 0）
     alt 沒有 chunk 通過門檻
         API-->>U: 固定拒答文案，不呼叫 provider

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.about_content import AboutContent
 from app.models.article import Article, ArticleStatus
+from app.models.project import Project
 
 from .chunking import chunk_markdown
 
@@ -82,10 +83,10 @@ def _chunks_for_source(
 
 
 async def retrieve(db: AsyncSession, query: str, top_k: int = 5) -> list[RetrievedChunk]:
-    """關鍵字檢索：只從已發布文章與「關於我」內容取材，依關鍵字命中
-    次數排序，回傳最相關的前 top_k 個片段。沒有任何內容通過最低相關度
-    門檻時回傳空列表——呼叫端應據此判斷是否要讓模型明確拒答，而不是
-    硬塞不相關的內容進 prompt。
+    """關鍵字檢索：只從已發布文章、已發布作品與「關於我」內容取材，
+    依關鍵字命中次數排序，回傳最相關的前 top_k 個片段。沒有任何內容
+    通過最低相關度門檻時回傳空列表——呼叫端應據此判斷是否要讓模型
+    明確拒答，而不是硬塞不相關的內容進 prompt。
     """
     query_tokens = _tokenize(query)
     if not query_tokens:
@@ -105,6 +106,19 @@ async def retrieve(db: AsyncSession, query: str, top_k: int = 5) -> list[Retriev
                 title=article.title,
                 url=f"/blog/{article.slug}",
                 source_type="article",
+            )
+        )
+
+    projects_result = await db.execute(select(Project).where(Project.status == "published"))
+    for project in projects_result.scalars().all():
+        candidates.extend(
+            _chunks_for_source(
+                content_md=project.content_md,
+                query_tokens=query_tokens,
+                id_prefix=f"project:{project.id}",
+                title=project.title,
+                url=f"/projects/{project.slug}",
+                source_type="project",
             )
         )
 
